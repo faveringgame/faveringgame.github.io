@@ -2,7 +2,7 @@
       "relation": ["delegate_permission/common.handle_all_urls"],
       "target": {
         "namespace": "android_app",
-        "package_name": "io.github.ruccyo13.favering",
-        "sha256_cert_fingerprints": ["A2:B4:83:A3:8C:2B:C3:A3:93:C6:16:A5:F2:F2:AF:8F:09:89:B5:D6:E6:EE:07:11:22:BE:AF:D1:17:FE:A1:4D"]
+        "package_name": "io.github.faveringgame.favering",
+        "sha256_cert_fingerprints": ["32:3A:6C:7A:BF:51:19:AB:52:17:1A:9C:48:3D:4E:1A:38:CB:DA:40:00:65:66:21:16:3C:13:05:4D:68:2D:95"]
       }
     }]
