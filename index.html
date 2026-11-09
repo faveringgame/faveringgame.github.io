@@ -68,6 +68,10 @@ h2.red{color:#f43f5e}
 #banner .box{display:inline-block;background:rgba(15,23,42,.88);border:3px solid #f59e0b;border-radius:14px;padding:14px 18px}
 #banner .l1{color:#fbbf24;font-size:.8rem;margin-bottom:10px}
 #banner .l2{color:#fff;font-size:clamp(.7rem,4vw,1rem);line-height:1.5}
+.lvsel{display:flex;flex-wrap:wrap;justify-content:center;gap:6px;margin:16px 0 0;max-width:22rem}
+.lvsel .lbl{width:100%;font-size:.55rem;color:#94a3b8;margin-bottom:4px}
+.lvsel button{font-family:"Press Start 2P","Courier New",monospace;font-size:.62rem;padding:9px 10px;border-radius:8px;background:#1e293b;color:#fbbf24;border:2px solid rgba(245,158,11,.4);cursor:pointer}
+.lvsel button:focus-visible{outline:3px solid #38bdf8;outline-offset:2px}
 @media (prefers-reduced-motion: reduce){.avatar{animation:none}}
 </style>
 </head>
@@ -95,6 +99,7 @@ h2.red{color:#f43f5e}
     <p>Ogni livello è un bar diverso. Prendi al volo birre e amari e bevili, ma più bevi più diventi rosso e lento: l’acqua ti rimette in sesto. Evita le sveglie!</p>
     <div class="legend"><span>🍺 birra +1</span><span>🥃 amaro +2</span><span>🏆 boccale d’oro +5</span><span>💧 acqua, ti riprendi</span></div>
     <button class="arcade-btn" id="play">GIOCA ORA</button>
+    <div class="lvsel px" id="lvsel"><div class="lbl">OPPURE PARTI DAL LIVELLO</div></div>
   </div>
 
   <div class="screen hidden" id="paused">
@@ -104,7 +109,7 @@ h2.red{color:#f43f5e}
   </div>
 
   <div class="screen hidden" id="over">
-    <h2 class="px red">PARTITA FINITA</h2>
+    <h2 class="px red" id="overTitle">PARTITA FINITA</h2>
     <p id="overMsg">Che giro!</p>
     <div class="scorebox px"><div class="lbl">PUNTEGGIO</div><div class="num" id="final">0</div></div>
     <p id="best">Record: 0</p>
@@ -124,7 +129,8 @@ h2.red{color:#f43f5e}
     {n:"Bar Le More",              w1:"#0f2a1d", w2:"#2f6b4a", c:"#5c3a1a", f:"#22150a", l:["#a3e635","#fbbf24"]},
     {n:"Piccola Sabry Bar",        w1:"#331a12", w2:"#9a4a2a", c:"#4a2c17", f:"#21130a", l:["#f97316","#fde047"]}
   ];
-  var PTS_PER_LEVEL = 15;
+  var PTS_PER_LEVEL = 15, TAXI_LEVEL = 7, ptsInLevel = 0;
+  function isTaxi(){ return level===TAXI_LEVEL; }
 
   var cv = document.getElementById("c"), cx = cv.getContext("2d");
   var game = document.getElementById("game");
@@ -244,18 +250,20 @@ h2.red{color:#f43f5e}
     items.push({k:ty.k, pts:ty.pts, d:ty.d, r:r, x:r+Math.random()*(W-2*r), y:-r, vy:speed, rot:Math.random()*6, vr:(Math.random()-.5)*2});
   }
 
-  function start(){
-    score=0; lives=3; level=1; drunk=0; items=[]; pops=[]; spawnT=0.6; drinks=0; rush=0; puffs=[];
+  function start(lv){
+    score=0; lives=3; level=(typeof lv==="number")?lv:1; ptsInLevel=0; drunk=0; items=[]; pops=[]; spawnT=0.6; drinks=0; rush=0; puffs=[];
     me.x=W/2; me.target=null; me.hurt=0; me.drink=null;
-    buildBg(); show(null); state="play"; updHud(); showBanner();
+    if(isTaxi()) startTaxi(); else buildBg();
+    show(null); state="play"; updHud(); showBanner();
     last=performance.now(); requestAnimationFrame(loop);
     beep(523,0.1); setTimeout(function(){beep(784,0.14);},100);
   }
-  function gameOver(msg){
+  function gameOver(msg, won){
     state="over";
     if(score>best){ best=score; try{localStorage.setItem("birra-best",String(best));}catch(e){} }
     document.getElementById("final").textContent=score;
-    document.getElementById("overMsg").textContent = msg || ("Sei arrivato al " + bar().n + ".");
+    var ot=document.getElementById("overTitle"); ot.textContent = won ? "SEI A CASA!" : "PARTITA FINITA"; ot.style.color = won ? "#4ade80" : "";
+    document.getElementById("overMsg").textContent = msg || (isTaxi() ? "Il taxi si è fermato prima di Sovere." : "Sei arrivato al " + bar().n + ".");
     document.getElementById("best").textContent = (score>=best && score>0) ? "Nuovo record!" : "Record: "+best;
     show("over"); document.getElementById("banner").classList.add("hidden");
     beep(392,0.2); setTimeout(function(){beep(262,0.35);},180);
@@ -269,20 +277,22 @@ h2.red{color:#f43f5e}
   }
   function showBanner(){
     document.getElementById("b1").textContent = "LIVELLO "+level;
-    document.getElementById("b2").textContent = level===1 ? "SI PARTE!" : "CAMBIO BAR!";
+    document.getElementById("b2").textContent = isTaxi() ? "RITORNO A CASA IN TAXI" : (level===1 ? "SI PARTE!" : "CAMBIO BAR!");
     document.getElementById("banner").classList.remove("hidden"); bannerT=2.2;
   }
   function updHud(){
     document.getElementById("score").textContent=score;
     var h=""; for(var i=0;i<3;i++) h += i<lives ? "❤️" : "🖤";
     document.getElementById("hearts").textContent=h;
-    document.getElementById("level").textContent="Liv. "+level;
+    document.getElementById("level").textContent = (isTaxi() && TX) ? "🚕 "+TX.pax+"/3" : "Liv. "+level;
     document.getElementById("drunk").style.width = Math.round(drunk*100)+"%";
+    document.querySelector(".meter").style.display = isTaxi() ? "none" : "";
   }
 
   function update(dt){
     t+=dt;
     if(bannerT>0){ bannerT-=dt; if(bannerT<=0) document.getElementById("banner").classList.add("hidden"); }
+    if(isTaxi()){ updateTaxi(dt); updHud(); return; }
     // la sbornia cala piano piano
     drunk = Math.max(0, drunk - 0.025*dt);
     // più hai bevuto, più sei lento e barcolli
@@ -329,8 +339,12 @@ h2.red{color:#f43f5e}
       lives--; me.hurt=0.8; drunk=0.45; pop({x:me.x,y:groundY-me.h},"Troppo! Ti siedi un attimo",true); beep(200,0.4,"sawtooth",0.06); vibrate(150);
       if(lives<=0){ gameOver("Troppi brindisi: oggi il giro finisce qui!"); return; }
     }
-    var nl = 1+Math.floor(score/PTS_PER_LEVEL);
-    if(nl>level){ level=nl; drunk=Math.max(0,drunk-0.2); buildBg(); showBanner(); beep(1047,0.2); }
+    ptsInLevel += it.pts;
+    if(ptsInLevel>=PTS_PER_LEVEL && level<TAXI_LEVEL){
+      ptsInLevel=0; level++; drunk=Math.max(0,drunk-0.2);
+      if(isTaxi()) startTaxi(); else buildBg();
+      showBanner(); beep(1047,0.2);
+    }
   }
   // ogni tot bevute: nuvola retrò "Ancora una, dai!" e il gioco accelera
   var DRINKS_FOR_RUSH = 10, RUSH_LEN = 6;
@@ -394,6 +408,7 @@ h2.red{color:#f43f5e}
 
   /* disegno */
   function draw(){
+    if(isTaxi() && TX){ drawTaxi(); return; }
     cx.clearRect(0,0,W,H);
     cx.save(); if(rush>0 && rushT<0.5) cx.translate((Math.random()-.5)*8,(Math.random()-.5)*8);
     if(bg) cx.drawImage(bg,0,0,W,H);
@@ -543,6 +558,187 @@ h2.red{color:#f43f5e}
     (function step(){ if(state==="play"){ idleOn=false; return; } t+=0.016; blinkT-=0.016; if(blinkT<-0.14) blinkT=2+Math.random()*2.5; draw(); requestAnimationFrame(step); })();
   }
 
+
+  /* ===== LIVELLO 7: RITORNO A CASA IN TAXI ===== */
+  var TX = null, ROAD_LEN = 70;
+  var CAR_COLS = ["#ef4444","#3b82f6","#22c55e","#a855f7","#f97316","#e5e7eb","#14b8a6"];
+  function road(){ var L=W*0.14, R=W*0.86; return {L:L, R:R, lw:(R-L)/3}; }
+  function carSize(){ var cw=Math.max(34,Math.min(W*0.13,56)); return {w:cw, h:cw*1.8}; }
+  function startTaxi(){
+    drunk=0; items=[]; rush=0; puffs=[]; me.drink=null; me.x=W/2; me.target=null;
+    TX={dist:0, scroll:0, cars:[], holes:[], friends:[], houses:[], notes:[], pax:0, delivered:0,
+        spawnC:1.4, spawnH:3, spawnF:1.5, spawnHo:4, singT:6, sing:0, sign:null, hurt:0};
+  }
+  function taxiSpeed(){ return H*(0.5 + 0.35*Math.min(1,TX.dist/ROAD_LEN)); }
+  function updateTaxi(dt){
+    var rd=road(), cs=carSize(), spd=taxiSpeed(), carY=H*0.76;
+    TX.dist+=dt; TX.scroll+=spd*dt;
+    if(me.hurt>0) me.hurt-=dt; blinkT-=dt; if(blinkT< -0.14) blinkT=2+Math.random()*2.5;
+    // sterzo (il tassista è sobrio: comandi precisi)
+    var sp=W*1.9;
+    if(me.dir){ me.x+=me.dir*sp*dt; me.target=null; }
+    else if(me.target!==null){ var d=me.target-me.x, m=sp*dt; me.x += Math.abs(d)<m ? d : Math.sign(d)*m; }
+    me.x=clamp(me.x, rd.L+cs.w*0.55, rd.R-cs.w*0.55);
+    var ending = TX.dist>=ROAD_LEN;
+    // traffico
+    TX.spawnC-=dt;
+    if(TX.spawnC<=0 && !ending){
+      var lane=Math.floor(Math.random()*3);
+      TX.cars.push({x:rd.L+rd.lw*(lane+0.5), y:-cs.h, v:spd*(0.35+Math.random()*0.3), col:CAR_COLS[Math.floor(Math.random()*CAR_COLS.length)]});
+      TX.spawnC=Math.max(0.5, 1.5-TX.dist/ROAD_LEN)*(0.7+Math.random()*0.6);
+    }
+    TX.spawnH-=dt;
+    if(TX.spawnH<=0 && !ending){ TX.holes.push({x:rd.L+cs.w*0.4+Math.random()*(rd.R-rd.L-cs.w*0.8), y:-30, r:cs.w*0.32}); TX.spawnH=2.5+Math.random()*3; }
+    // amici da caricare (fino a 3 a bordo)
+    TX.spawnF-=dt;
+    if(TX.spawnF<=0 && !ending){ if(TX.pax<3) TX.friends.push({side:Math.random()<.5?-1:1, y:-30, col:CAR_COLS[Math.floor(Math.random()*CAR_COLS.length)]}); TX.spawnF=3+Math.random()*2.5; }
+    // case dove lasciarli
+    TX.spawnHo-=dt;
+    if(TX.spawnHo<=0 && !ending){ if(TX.pax>0) TX.houses.push({side:Math.random()<.5?-1:1, y:-50}); TX.spawnHo=4+Math.random()*3; }
+    // movimento e collisioni
+    var px0=me.x-cs.w*0.42, px1=me.x+cs.w*0.42, py0=carY-cs.h*0.45, py1=carY+cs.h*0.45, i;
+    for(i=TX.cars.length-1;i>=0;i--){
+      var c=TX.cars[i]; c.y += (spd-c.v)*dt;
+      if(c.x+cs.w*0.42>px0 && c.x-cs.w*0.42<px1 && c.y+cs.h*0.45>py0 && c.y-cs.h*0.45<py1){
+        TX.cars.splice(i,1); lives--; me.hurt=0.8; TX.hurt=0.4; pop({x:me.x,y:carY-cs.h},"Bang!"); beep(110,0.35,"sawtooth",0.09); vibrate(160);
+        if(lives<=0){ gameOver("Incidente: il taxi è finito dal carrozziere!"); return; } continue;
+      }
+      if(c.y-cs.h>H) TX.cars.splice(i,1);
+    }
+    for(i=TX.holes.length-1;i>=0;i--){
+      var h=TX.holes[i]; h.y+=spd*dt;
+      if(!h.hit && Math.abs(h.x-me.x)<cs.w*0.4+h.r*0.6 && Math.abs(h.y-carY)<cs.h*0.4+h.r*0.4){
+        h.hit=true; TX.hurt=0.25; score=Math.max(0,score-1); pop({x:me.x,y:carY-cs.h},"Buca! -1"); beep(90,0.15,"square",0.08); vibrate(60);
+      }
+      if(h.y-h.r>H) TX.holes.splice(i,1);
+    }
+    var nearLeft = me.x-cs.w/2 < rd.L+rd.lw*0.75, nearRight = me.x+cs.w/2 > rd.R-rd.lw*0.75;
+    for(i=TX.friends.length-1;i>=0;i--){
+      var f=TX.friends[i]; f.y+=spd*dt;
+      if(TX.pax<3 && Math.abs(f.y-carY)<cs.h*0.55 && ((f.side<0&&nearLeft)||(f.side>0&&nearRight))){
+        TX.friends.splice(i,1); TX.pax++; score+=2; pop({x:me.x,y:carY-cs.h},"Sale a bordo! +2"); beep(660,0.08); setTimeout(function(){beep(880,0.1);},80); continue;
+      }
+      if(f.y>H+40) TX.friends.splice(i,1);
+    }
+    for(i=TX.houses.length-1;i>=0;i--){
+      var o=TX.houses[i]; o.y+=spd*dt;
+      if(TX.pax>0 && Math.abs(o.y-carY)<cs.h*0.6 && ((o.side<0&&nearLeft)||(o.side>0&&nearRight))){
+        TX.houses.splice(i,1); TX.pax--; TX.delivered++; score+=5; pop({x:me.x,y:carY-cs.h},"A casa! +5");
+        [523,659,784].forEach(function(n,j){ setTimeout(function(){ beep(n,0.08); }, j*70); }); continue;
+      }
+      if(o.y>H+60) TX.houses.splice(i,1);
+    }
+    // gli amici a bordo cantano e coprono la visuale
+    if(TX.pax>0){ TX.singT-=dt; if(TX.singT<=0){ TX.sing=2.8; TX.singT=7+Math.random()*4; beep(392,0.1,"triangle"); setTimeout(function(){beep(440,0.1,"triangle");},150); setTimeout(function(){beep(494,0.12,"triangle");},300); } }
+    if(TX.sing>0){ TX.sing-=dt; if(Math.random()<dt*14) TX.notes.push({x:W*0.2+Math.random()*W*0.6, y:H*0.62, vx:(Math.random()-.5)*60, life:2}); }
+    for(i=TX.notes.length-1;i>=0;i--){ var n=TX.notes[i]; n.life-=dt; n.y-=H*0.18*dt; n.x+=n.vx*dt; if(n.life<=0) TX.notes.splice(i,1); }
+    if(TX.hurt>0) TX.hurt-=dt;
+    // arrivo: cartello SOVERE
+    if(ending && !TX.sign) TX.sign={y:-80};
+    if(TX.sign){ TX.sign.y+=spd*0.8*dt; if(TX.sign.y>carY-cs.h*0.2){ var bonus=10+TX.pax*3; score+=bonus;
+      gameOver("Sei arrivato a Sovere! Amici portati a casa: "+TX.delivered+". Bonus arrivo +"+bonus+".", true); return; } }
+    for(i=pops.length-1;i>=0;i--){ pops[i].life-=dt; pops[i].y-=40*dt; if(pops[i].life<=0) pops.splice(i,1); }
+  }
+
+  function drawTaxi(){
+    var rd=road(), cs=carSize(), carY=H*0.76, i;
+    cx.clearRect(0,0,W,H); cx.save();
+    if(TX.hurt>0) cx.translate((Math.random()-.5)*10,(Math.random()-.5)*10);
+    // marciapiedi e prato
+    cx.fillStyle="#0b1020"; cx.fillRect(0,0,W,H);
+    cx.fillStyle="#2a2f3a"; cx.fillRect(0,0,rd.L,H); cx.fillRect(rd.R,0,W-rd.R,H);
+    cx.fillStyle="#3b4252"; var tile=28, off=TX.scroll%tile;
+    for(var y=-tile+off;y<H;y+=tile){ cx.fillRect(0,y,rd.L-6,2); cx.fillRect(rd.R+6,y,W-rd.R,2); }
+    cx.fillStyle="#9ca3af"; cx.fillRect(rd.L-6,0,6,H); cx.fillRect(rd.R,0,6,H);
+    // strada
+    cx.fillStyle="#1f2430"; cx.fillRect(rd.L,0,rd.R-rd.L,H);
+    cx.fillStyle="#facc15"; cx.fillRect(rd.L+4,0,3,H); cx.fillRect(rd.R-7,0,3,H);
+    cx.fillStyle="#e5e7eb"; var dash=34, per=70, o2=TX.scroll%per;
+    for(var k=1;k<3;k++){ var lx=rd.L+rd.lw*k-2; for(y=-per+o2;y<H;y+=per) cx.fillRect(lx,y,4,dash); }
+    // lampioni
+    var lp=240, o3=TX.scroll%lp;
+    for(y=-lp+o3;y<H+lp;y+=lp){ [rd.L-14, rd.R+14].forEach(function(xx){
+      var g=cx.createRadialGradient(xx,y,2,xx,y,70); g.addColorStop(0,"rgba(253,230,138,.35)"); g.addColorStop(1,"rgba(253,230,138,0)");
+      cx.fillStyle=g; cx.beginPath(); cx.arc(xx,y,70,0,7); cx.fill(); cx.fillStyle="#fde68a"; cx.fillRect(xx-4,y-4,8,8); }); }
+    // buche
+    for(i=0;i<TX.holes.length;i++){ var h=TX.holes[i]; cx.fillStyle="#0a0c12"; cx.beginPath(); cx.ellipse(h.x,h.y,h.r,h.r*0.6,0,0,7); cx.fill(); cx.strokeStyle="#3b4252"; cx.lineWidth=2; cx.stroke(); }
+    // case
+    for(i=0;i<TX.houses.length;i++){ var ho=TX.houses[i], hx=ho.side<0 ? rd.L*0.5 : rd.R+(W-rd.R)*0.5; drawHouse(hx, ho.y); }
+    // amici che aspettano
+    for(i=0;i<TX.friends.length;i++){ var f=TX.friends[i], fx=f.side<0 ? rd.L*0.55 : rd.R+(W-rd.R)*0.45; drawFriend(fx, f.y, f.col, f.side); }
+    // traffico
+    for(i=0;i<TX.cars.length;i++){ var c=TX.cars[i]; drawCar(c.x,c.y,cs.w,cs.h,c.col,false); }
+    // cartello SOVERE
+    if(TX.sign){ var sw=Math.min(W*0.62,240), sh=54, sy=TX.sign.y;
+      cx.fillStyle="#6b7280"; cx.fillRect(W/2-sw/2+10,sy,6,60); cx.fillRect(W/2+sw/2-16,sy,6,60);
+      cx.fillStyle="#fff"; cx.fillRect(W/2-sw/2,sy-sh,sw,sh); cx.strokeStyle="#111"; cx.lineWidth=4; cx.strokeRect(W/2-sw/2+6,sy-sh+6,sw-12,sh-12);
+      cx.fillStyle="#111"; cx.font="16px 'Press Start 2P', 'Courier New', monospace"; cx.textAlign="center"; cx.textBaseline="middle"; cx.fillText("SOVERE",W/2,sy-sh/2+1); }
+    // taxi del giocatore con fari
+    var beam=cx.createLinearGradient(0,carY-cs.h*0.5,0,carY-cs.h*2.6); beam.addColorStop(0,"rgba(254,249,195,.35)"); beam.addColorStop(1,"rgba(254,249,195,0)");
+    cx.fillStyle=beam; cx.beginPath(); cx.moveTo(me.x-cs.w*0.35,carY-cs.h*0.5); cx.lineTo(me.x-cs.w*1.1,carY-cs.h*2.6); cx.lineTo(me.x+cs.w*1.1,carY-cs.h*2.6); cx.lineTo(me.x+cs.w*0.35,carY-cs.h*0.5); cx.fill();
+    drawCar(me.x,carY,cs.w,cs.h,"#facc15",true);
+    // amici a bordo (teste sui sedili dietro)
+    for(i=0;i<TX.pax;i++){ cx.fillStyle=["#fca5a5","#fde68a","#a7f3d0"][i]; cx.fillRect(me.x-cs.w*0.3+i*cs.w*0.22, carY+cs.h*0.12, cs.w*0.16, cs.w*0.16); }
+    // canto degli amici: note che coprono la visuale
+    if(TX.sing>0){ cx.fillStyle="rgba(15,23,42,"+Math.min(0.55,TX.sing*0.4)+")"; cx.fillRect(0,H*0.2,W,H*0.42);
+      cx.font="14px 'Press Start 2P', 'Courier New', monospace"; cx.textAlign="center"; cx.textBaseline="middle"; cx.lineWidth=3; cx.strokeStyle="#0f172a";
+      cx.strokeText("LA LA LAAA!",W/2,H*0.3); cx.fillStyle=["#f43f5e","#fbbf24","#22d3ee"][Math.floor(t*6)%3]; cx.fillText("LA LA LAAA!",W/2,H*0.3); }
+    for(i=0;i<TX.notes.length;i++){ var n=TX.notes[i]; cx.globalAlpha=Math.min(1,n.life); drawNote(n.x,n.y,Math.max(5,W/60)); }
+    cx.globalAlpha=1;
+    // barra del percorso verso Sovere
+    var bw=W-40, bx=20, by=58, pr=Math.min(1,TX.dist/ROAD_LEN);
+    cx.fillStyle="rgba(15,23,42,.85)"; cx.fillRect(bx-4,by-4,bw+8,16);
+    cx.fillStyle="#334155"; cx.fillRect(bx,by,bw,8); cx.fillStyle="#facc15"; cx.fillRect(bx,by,bw*pr,8);
+    cx.font="9px 'Press Start 2P', 'Courier New', monospace"; cx.textAlign="right"; cx.textBaseline="top"; cx.fillStyle="#fff"; cx.fillText("SOVERE",bx+bw,by+14);
+    cx.fillStyle="#facc15"; cx.fillRect(bx+bw*pr-5,by-3,10,14);
+    // ritratto del tassista
+    if(frames){ var fw=46, fh=fw*46/28, rx=12, ry=H-fh-30; cx.fillStyle="rgba(15,23,42,.85)"; cx.fillRect(rx-4,ry-4,fw+8,fh+24);
+      cx.imageSmoothingEnabled=false; var fr = blinkT<0 ? frames.blink : frames.base; cx.drawImage(me.hurt>0 ? tintCanvas(fr,0.5) : fr, rx, ry, fw, fh);
+      cx.font="7px 'Press Start 2P', 'Courier New', monospace"; cx.textAlign="center"; cx.textBaseline="top"; cx.fillStyle="#facc15"; cx.fillText("TAXI",rx+fw/2,ry+fh+6); }
+    // scritte
+    cx.textAlign="center"; cx.textBaseline="alphabetic";
+    for(i=0;i<pops.length;i++){ var p=pops[i]; cx.globalAlpha=Math.min(1,p.life*2);
+      cx.font="800 22px 'Baloo 2', 'Trebuchet MS', sans-serif"; cx.lineWidth=5; cx.strokeStyle="#0f172a"; cx.strokeText(p.txt,p.x,p.y); cx.fillStyle="#fde68a"; cx.fillText(p.txt,p.x,p.y); }
+    cx.globalAlpha=1; cx.restore();
+  }
+  function drawCar(x,y,w,h,col,isTaxi){
+    cx.save(); cx.translate(x,y);
+    cx.fillStyle="rgba(0,0,0,.35)"; roundRect(-w/2+3,-h/2+5,w,h,w*0.2); cx.fill();
+    cx.fillStyle=col; roundRect(-w/2,-h/2,w,h,w*0.2); cx.fill();
+    cx.fillStyle="rgba(15,23,42,.85)"; roundRect(-w*0.38,-h*0.3,w*0.76,h*0.2,4); cx.fill(); roundRect(-w*0.36,h*0.2,w*0.72,h*0.14,4); cx.fill();
+    cx.fillStyle="rgba(255,255,255,.18)"; cx.fillRect(-w*0.38,-h*0.08,w*0.76,h*0.26);
+    if(isTaxi){
+      cx.fillStyle="#111"; for(var i=0;i<6;i++) if(i%2===0){ cx.fillRect(-w/2+i*w/6,-h*0.02,w/6,w/8); } else { cx.fillRect(-w/2+i*w/6,-h*0.02+w/8,w/6,w/8); }
+      cx.fillStyle="#fff"; roundRect(-w*0.24,-h*0.12,w*0.48,h*0.09,3); cx.fill();
+      cx.fillStyle="#111"; cx.font=Math.max(6,Math.round(w*0.15))+"px 'Press Start 2P', monospace"; cx.textAlign="center"; cx.textBaseline="middle"; cx.fillText("TAXI",0,-h*0.075);
+      cx.fillStyle="#fef9c3"; cx.fillRect(-w*0.42,-h/2,w*0.2,5); cx.fillRect(w*0.22,-h/2,w*0.2,5);
+    } else {
+      cx.fillStyle="#ef4444"; cx.fillRect(-w*0.42,h/2-5,w*0.2,5); cx.fillRect(w*0.22,h/2-5,w*0.2,5);
+    }
+    cx.restore();
+  }
+  function drawFriend(x,y,col,side){
+    var u=Math.max(3,Math.round(W/110));
+    cx.fillStyle="#e2a17c"; cx.fillRect(x-2*u,y-11*u,4*u,4*u);
+    cx.fillStyle=col; cx.fillRect(x-3*u,y-7*u,6*u,7*u);
+    cx.fillStyle="#1f2937"; cx.fillRect(x-3*u,y,2*u,4*u); cx.fillRect(x+u,y,2*u,4*u);
+    var ax = side<0 ? x+3*u : x-4*u; cx.fillStyle=col; cx.fillRect(ax,y-13*u+Math.round(Math.sin(t*8))*u,u,6*u);
+    cx.fillStyle="#b45309"; cx.fillRect(side<0 ? x-5*u : x+3*u, y-6*u, 2*u, 4*u);
+    cx.font=Math.max(8,u*3)+"px 'Press Start 2P', monospace"; cx.textAlign="center"; cx.textBaseline="bottom";
+    cx.fillStyle="#0f172a"; cx.fillRect(x-7*u,y-19*u,14*u,5*u); cx.fillStyle="#facc15"; cx.fillText("TAXI!",x,y-14.6*u);
+  }
+  function drawHouse(x,y){
+    var u=Math.max(3,Math.round(W/100));
+    cx.fillStyle="#fef3c7"; cx.fillRect(x-5*u,y-6*u,10*u,8*u);
+    cx.fillStyle="#b91c1c"; cx.beginPath(); cx.moveTo(x-7*u,y-6*u); cx.lineTo(x,y-12*u); cx.lineTo(x+7*u,y-6*u); cx.fill();
+    cx.fillStyle="#78350f"; cx.fillRect(x-u,y-2*u,3*u,4*u); cx.fillStyle="#facc15"; cx.fillRect(x-4*u,y-4*u,2*u,2*u); cx.fillRect(x+3*u,y-4*u,2*u,2*u);
+    cx.font=Math.max(7,u*2.4)+"px 'Press Start 2P', monospace"; cx.textAlign="center"; cx.textBaseline="top"; cx.fillStyle="#4ade80"; cx.fillText("CASA",x,y+4*u);
+  }
+  function drawNote(x,y,u){
+    cx.fillStyle=["#f43f5e","#fbbf24","#22d3ee","#a3e635"][Math.floor((x+y)/40)%4];
+    cx.fillRect(x,y,2*u,2*u); cx.fillRect(x+1.5*u,y-5*u,u*0.6,5.5*u); cx.fillRect(x+1.5*u,y-5*u,2*u,u*0.8);
+  }
+
   /* comandi */
   function setTarget(e){ var r=game.getBoundingClientRect(); me.target=e.clientX-r.left; }
   game.addEventListener("pointerdown",function(e){ if(state==="play" && !e.target.closest("button")) setTarget(e); });
@@ -553,8 +749,14 @@ h2.red{color:#f43f5e}
     else if(e.key==="p"||e.key==="Escape"){ state==="play"?pause():resume(); }
   });
   window.addEventListener("keyup",function(e){ if((e.key==="ArrowLeft"&&me.dir<0)||(e.key==="ArrowRight"&&me.dir>0)) me.dir=0; });
-  document.getElementById("play").onclick=start;
-  document.getElementById("again").onclick=start;
+  document.getElementById("play").onclick=function(){ start(1); };
+  (function(){
+    var box=document.getElementById("lvsel");
+    for(var n=1;n<=TAXI_LEVEL;n++){ (function(n){ var b=document.createElement("button"); b.textContent = n===TAXI_LEVEL ? "🚕 "+n : String(n);
+      b.setAttribute("aria-label", n===TAXI_LEVEL ? "Livello 7, ritorno a casa in taxi" : "Livello "+n+", "+BARS[n-1].n);
+      b.onclick=function(){ start(n); }; box.appendChild(b); })(n); }
+  })();
+  document.getElementById("again").onclick=function(){ start(1); };
   document.getElementById("resume").onclick=resume;
   document.getElementById("pause").onclick=function(){ state==="play"?pause():resume(); };
   document.getElementById("sound").onclick=function(){
