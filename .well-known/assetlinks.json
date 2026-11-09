@@ -1,0 +1,8 @@
+[{
+      "relation": ["delegate_permission/common.handle_all_urls"],
+      "target": {
+        "namespace": "android_app",
+        "package_name": "io.github.ruccyo13.favering",
+        "sha256_cert_fingerprints": ["A2:B4:83:A3:8C:2B:C3:A3:93:C6:16:A5:F2:F2:AF:8F:09:89:B5:D6:E6:EE:07:11:22:BE:AF:D1:17:FE:A1:4D"]
+      }
+    }]
