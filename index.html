@@ -233,12 +233,12 @@ h2.red{color:#f43f5e}
 
   /* oggetti */
   var TYPES = [
-    {k:"bottle", p:0.30, pts:1, d:0.06},
-    {k:"mug",    p:0.20, pts:1, d:0.07},
-    {k:"amaro",  p:0.14, pts:2, d:0.15},
-    {k:"gold",   p:0.04, pts:5, d:0.08},
-    {k:"water",  p:0.09, pts:0, d:-0.35},
-    {k:"clock",  p:0.17, pts:0, d:0}
+    {k:"bottle", p:0.30, pts:1, d:0.08},
+    {k:"mug",    p:0.20, pts:1, d:0.09},
+    {k:"amaro",  p:0.14, pts:2, d:0.20},
+    {k:"gold",   p:0.04, pts:5, d:0.10},
+    {k:"water",  p:0.06, pts:0, d:-0.30},
+    {k:"clock",  p:0.25, pts:0, d:0}
   ];
   function pickType(){
     if(lives<3 && Math.random()<0.025) return {k:"heart",pts:0,d:0};
@@ -250,7 +250,7 @@ h2.red{color:#f43f5e}
   }
   function spawn(){
     var ty=pickType(), r=Math.max(16, Math.min(W,H)*0.045);
-    var speed = H*(0.22+0.035*(level-1))*(0.85+Math.random()*0.3);
+    var speed = H*(0.30+0.035*(level-1))*(1+ptsInLevel*0.015)*(0.85+Math.random()*0.3);
     items.push({k:ty.k, pts:ty.pts, d:ty.d, r:r, x:r+Math.random()*(W-2*r), y:-r, vy:speed, rot:Math.random()*6, vr:(Math.random()-.5)*2});
   }
 
@@ -298,7 +298,7 @@ h2.red{color:#f43f5e}
     if(bannerT>0){ bannerT-=dt; if(bannerT<=0) document.getElementById("banner").classList.add("hidden"); }
     if(isTaxi()){ updateTaxi(dt); updHud(); return; }
     // la sbornia cala piano piano
-    drunk = Math.max(0, drunk - 0.025*dt);
+    drunk = Math.max(0, drunk - 0.018*dt);
     // più hai bevuto, più sei lento e barcolli
     var slow = 1 - 0.62*drunk, sp = W*1.6*slow;
     var sway = Math.sin(t*2.6)*drunk*W*0.06;
@@ -313,7 +313,7 @@ h2.red{color:#f43f5e}
     var fast = rush>0 ? 1.6 : 1;
     if(rush>0){ rush-=dt; rushT+=dt; }
     spawnT-=dt*fast;
-    if(spawnT<=0){ spawn(); spawnT = Math.max(0.35, 1.05-(level-1)*0.08)*(0.7+Math.random()*0.6); }
+    if(spawnT<=0){ spawn(); spawnT = Math.max(0.3, 0.8-(level-1)*0.06-ptsInLevel*0.008)*(0.7+Math.random()*0.6); }
 
     var top = groundY - me.h*1.02, bw = me.w*0.8;
     for(var i=items.length-1;i>=0;i--){
