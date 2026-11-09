@@ -135,6 +135,7 @@ h2.red{color:#f43f5e}
   var READY = [1, 2, 3, 4, 5, 6, 7];
   function nextLevel(l){ for(var n=l+1;n<=TAXI_LEVEL;n++) if(READY.indexOf(n)>=0) return n; return TAXI_LEVEL; }
   function isTaxi(){ return level===TAXI_LEVEL; }
+  function isShooter(){ return level===2; }
 
   var cv = document.getElementById("c"), cx = cv.getContext("2d");
   var game = document.getElementById("game");
@@ -257,7 +258,7 @@ h2.red{color:#f43f5e}
   function start(lv){
     score=0; lives=3; level=(typeof lv==="number")?lv:1; ptsInLevel=0; drunk=0; items=[]; pops=[]; spawnT=0.6; drinks=0; rush=0; puffs=[];
     me.x=W/2; me.target=null; me.hurt=0; me.drink=null;
-    if(isTaxi()) startTaxi(); else buildBg();
+    if(isTaxi()) startTaxi(); else { buildBg(); if(isShooter()) startShooter(); }
     show(null); state="play"; updHud(); showBanner();
     last=performance.now(); requestAnimationFrame(loop);
     beep(523,0.1); setTimeout(function(){beep(784,0.14);},100);
@@ -281,7 +282,7 @@ h2.red{color:#f43f5e}
   }
   function showBanner(){
     document.getElementById("b1").textContent = "LIVELLO "+level;
-    document.getElementById("b2").textContent = isTaxi() ? "RITORNO A CASA IN TAXI" : (level===1 ? "SI PARTE!" : "CAMBIO BAR!");
+    document.getElementById("b2").textContent = isTaxi() ? "RITORNO A CASA IN TAXI" : (isShooter() ? "SPARA I TAPPI ALLE SVEGLIE!" : (level===1 ? "SI PARTE!" : "CAMBIO BAR!"));
     document.getElementById("banner").classList.remove("hidden"); bannerT=2.2;
   }
   function updHud(){
@@ -309,6 +310,7 @@ h2.red{color:#f43f5e}
     if(me.hurt>0) me.hurt-=dt; if(me.happy>0) me.happy-=dt;
     if(me.drink){ me.drink.t+=dt; if(me.drink.t>=me.drink.dur) me.drink=null; }
     blinkT-=dt; if(blinkT< -0.14) blinkT = 2+Math.random()*2.5;
+    if(isShooter()){ updateShooter(dt); if(state==="play") updHud(); return; }
 
     var fast = rush>0 ? 1.6 : 1;
     if(rush>0){ rush-=dt; rushT+=dt; }
@@ -346,7 +348,7 @@ h2.red{color:#f43f5e}
     ptsInLevel += it.pts;
     if(ptsInLevel>=PTS_PER_LEVEL && level<TAXI_LEVEL){
       ptsInLevel=0; level=nextLevel(level); drunk=Math.max(0,drunk-0.2);
-      if(isTaxi()) startTaxi(); else buildBg();
+      if(isTaxi()) startTaxi(); else { buildBg(); items=[]; if(isShooter()) startShooter(); }
       showBanner(); beep(1047,0.2);
     }
   }
@@ -416,6 +418,7 @@ h2.red{color:#f43f5e}
     cx.clearRect(0,0,W,H);
     cx.save(); if(rush>0 && rushT<0.5) cx.translate((Math.random()-.5)*8,(Math.random()-.5)*8);
     if(bg) cx.drawImage(bg,0,0,W,H);
+    if(isShooter()) drawShooter();
     drawMe();
     for(var i=0;i<items.length;i++) drawItem(items[i]);
     drawRush();
@@ -562,6 +565,100 @@ h2.red{color:#f43f5e}
     (function step(){ if(state==="play"){ idleOn=false; return; } t+=0.016; blinkT-=0.016; if(blinkT<-0.14) blinkT=2+Math.random()*2.5; draw(); requestAnimationFrame(step); })();
   }
 
+
+  /* ===== LIVELLO 2: SPARATUTTO AL BAR ROSSI ===== */
+  var SH = null;
+  function startShooter(){ SH={wave:0, clocks:[], dir:1, gx:0, gy:0, shots:[], bombs:[], fireT:0.4, bombT:2}; nextWave(); }
+  function clockR(){ return Math.max(14, Math.min(W/18, 22)); }
+  function nextWave(){
+    SH.wave++; SH.clocks=[]; var r=clockR(), cols=5, rows=4, sp=r*2.6;
+    for(var rr=0;rr<rows;rr++) for(var c=0;c<cols;c++) SH.clocks.push({cx:(c-(cols-1)/2)*sp, cy:rr*r*2.2, alive:true, ph:Math.random()*6});
+    SH.gx=W/2; SH.gy=Math.max(H*0.22, 160); SH.dir=Math.random()<.5?-1:1; SH.total=cols*rows; SH.shots=[]; SH.bombs=[];
+    if(SH.wave>1){ pop({x:W/2,y:H*0.45},"ONDATA "+SH.wave+"!",true); [440,554,659].forEach(function(n,j){ setTimeout(function(){beep(n,0.08);}, j*70); }); }
+  }
+  function updateShooter(dt){
+    if(!SH) startShooter();
+    var fast = rush>0 ? 1.6 : 1; if(rush>0){ rush-=dt; rushT+=dt; }
+    var r=clockR(), alive=SH.clocks.filter(function(c){return c.alive;});
+    if(!alive.length){ nextWave(); return; }
+    // la formazione si sposta e scende quando tocca il bordo
+    var minX=Infinity, maxX=-Infinity, maxY=-Infinity;
+    alive.forEach(function(c){ minX=Math.min(minX,c.cx); maxX=Math.max(maxX,c.cx); maxY=Math.max(maxY,c.cy); });
+    var vel = W*(0.13+0.04*SH.wave)*(1+1.2*(1-alive.length/SH.total))*fast;
+    SH.gx += SH.dir*vel*dt;
+    if(SH.gx+maxX > W-r-6){ SH.gx=W-r-6-maxX; SH.dir=-1; SH.gy+=r*0.9; beep(220,0.05,"square",0.04); }
+    if(SH.gx+minX < r+6){ SH.gx=r+6-minX; SH.dir=1; SH.gy+=r*0.9; beep(220,0.05,"square",0.04); }
+    // troppo in basso: perdi una vita e l'ondata riparte
+    if(SH.gy+maxY+r > groundY-me.h*1.05){
+      lives--; me.hurt=0.8; pop({x:me.x,y:groundY-me.h*1.2},"Driiin!",true); beep(150,0.3,"square",0.09); vibrate(150);
+      if(lives<=0){ gameOver("Le sveglie hanno vinto: si torna a casa!"); return; }
+      SH.wave--; nextWave(); return;
+    }
+    // tiro automatico di tappi: da sbronzo la mira va storta
+    SH.fireT-=dt;
+    // regola arcade: un solo tappo alla volta in aria
+    if(SH.fireT<=0 && SH.shots.length===0){
+      SH.fireT=0.18;
+      SH.shots.push({x:me.x, y:groundY-me.h*1.08, vx:(Math.random()-0.5)*drunk*W*0.7, vy:-H*1.05});
+      beep(900,0.03,"square",0.03);
+    }
+    var i,j;
+    for(i=SH.shots.length-1;i>=0;i--){
+      var s=SH.shots[i]; s.x+=s.vx*dt; s.y+=s.vy*dt; var hit=false;
+      for(j=0;j<SH.clocks.length;j++){ var c=SH.clocks[j]; if(!c.alive) continue;
+        var x=SH.gx+c.cx, y=SH.gy+c.cy;
+        if(Math.abs(s.x-x)<r*0.9 && Math.abs(s.y-y)<r*0.9){
+          c.alive=false; hit=true; score++; ptsInLevel++; pop({x:x,y:y},"+1");
+          beep(320+Math.random()*80,0.06,"square",0.06);
+          for(var k=0;k<5;k++) puffs.push({x:x,y:y,vx:(Math.random()-.5)*W*0.4,vy:(Math.random()-.5)*H*0.2,b:Math.max(2,Math.round(r/7)),life:0.5});
+          // dalla sveglia colpita ogni tanto cade un boccale da bere
+          if(Math.random()<0.18){ var gold=Math.random()<0.08; items.push({k:gold?"gold":"mug", pts:gold?5:1, d:gold?0.10:0.09, r:Math.max(16,Math.min(W,H)*0.045), x:x, y:y, vy:H*0.32, rot:0, vr:(Math.random()-.5)*2}); }
+          break; }
+      }
+      if(hit || s.y<-20) SH.shots.splice(i,1);
+    }
+    // le sveglie lanciano squilli
+    SH.bombT-=dt*fast;
+    if(SH.bombT<=0 && alive.length){
+      var sh=alive[Math.floor(Math.random()*alive.length)];
+      SH.bombs.push({x:SH.gx+sh.cx, y:SH.gy+sh.cy+r, vy:H*(0.30+0.03*SH.wave)});
+      SH.bombT=Math.max(0.45, 1.5-SH.wave*0.15)*(0.6+Math.random()*0.8);
+    }
+    var bx0=me.x-me.w*0.36, bx1=me.x+me.w*0.36, by0=groundY-me.h*1.05, by1=groundY;
+    for(i=SH.bombs.length-1;i>=0;i--){
+      var b=SH.bombs[i]; b.y+=b.vy*dt*fast;
+      if(b.x>bx0 && b.x<bx1 && b.y>by0 && b.y<by1){
+        SH.bombs.splice(i,1); lives--; me.hurt=0.6; pop({x:me.x,y:by0},"Driiin!"); beep(150,0.25,"square",0.09); vibrate(90);
+        if(lives<=0){ gameOver("Troppi squilli: si torna a casa!"); return; } continue;
+      }
+      if(b.y>H) SH.bombs.splice(i,1);
+    }
+    // boccali che cadono: si bevono al volo
+    var top=groundY-me.h*1.02, bw=me.w*0.8;
+    for(i=items.length-1;i>=0;i--){
+      var it=items[i]; it.y+=it.vy*dt; it.rot+=it.vr*dt;
+      if(it.y+it.r*0.4>=top && it.y-it.r<top+me.h*0.45 && Math.abs(it.x-me.x)<bw/2+it.r*0.3){ items.splice(i,1); grab(it); if(state!=="play" || !isShooter()) return; continue; }
+      if(it.y-it.r>H) items.splice(i,1);
+    }
+    for(i=pops.length-1;i>=0;i--){ pops[i].life-=dt; pops[i].y-=40*dt; if(pops[i].life<=0) pops.splice(i,1); }
+    for(i=puffs.length-1;i>=0;i--){ var q=puffs[i]; q.life-=dt; q.x+=q.vx*dt; q.y+=q.vy*dt; q.vx*=0.94; q.vy*=0.94; if(q.life<=0) puffs.splice(i,1); }
+    // fine livello: 20 punti
+    if(ptsInLevel>=PTS_PER_LEVEL){ ptsInLevel=0; level=nextLevel(level); drunk=Math.max(0,drunk-0.2); items=[]; SH=null;
+      if(isTaxi()) startTaxi(); else buildBg(); showBanner(); beep(1047,0.2); }
+  }
+  function drawShooter(){
+    if(!SH) return;
+    var r=clockR(), i;
+    for(i=0;i<SH.clocks.length;i++){ var c=SH.clocks[i]; if(!c.alive) continue;
+      drawItem({k:"clock", x:SH.gx+c.cx, y:SH.gy+c.cy+Math.sin(t*6+c.ph)*2, r:r, rot:0}); }
+    // tappi di sughero
+    for(i=0;i<SH.shots.length;i++){ var s=SH.shots[i]; cx.fillStyle="#c08a4b"; cx.fillRect(s.x-4,s.y-7,8,12); cx.fillStyle="#e3b77a"; cx.fillRect(s.x-4,s.y-7,8,3); }
+    // squilli (campanelle a quadretti)
+    for(i=0;i<SH.bombs.length;i++){ var b=SH.bombs[i], u=3, a=Math.sin(t*30)*2;
+      cx.fillStyle="#fde047"; cx.fillRect(b.x-2*u,b.y-3*u,4*u,4*u); cx.fillRect(b.x-3*u,b.y+u,6*u,u); cx.fillStyle="#f97316"; cx.fillRect(b.x-u/2,b.y+2*u,u,u);
+      cx.strokeStyle="rgba(253,224,71,.7)"; cx.lineWidth=2;
+      cx.beginPath(); cx.moveTo(b.x-5*u,b.y-2*u+a); cx.lineTo(b.x-4*u,b.y+a); cx.moveTo(b.x+5*u,b.y-2*u-a); cx.lineTo(b.x+4*u,b.y-a); cx.stroke(); }
+  }
 
   /* ===== LIVELLO 7: RITORNO A CASA IN TAXI ===== */
   var TX = null, ROAD_LEN = 70;
