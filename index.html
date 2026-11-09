@@ -2578,7 +2578,7 @@ a.arcade-btn{text-decoration:none;display:inline-block}
   function pzGeo(){ var cs=Math.floor(Math.min((W-24)/PZC, (H-250)/PZR)); return {cs:cs, ox:Math.round((W-cs*PZC)/2), oy:Math.round(Math.max(130,(H-cs*PZR)/2+30))}; }
   function pzRand(){ return PZTYPES[Math.floor(Math.random()*PZTYPES.length)]; }
   function startPuzzle(){
-    PZ={g:[], score:0, giro:1, target:600, phase:"idle", t:0, sel:null, swap:null, combo:0, idle:0, hint:null, down:null, msg:null, conf:[]};
+    PZ={g:[], score:0, giro:1, target:600, phase:"idle", t:0, sel:null, swap:null, combo:0, idle:0, hint:null, down:null, msg:null, conf:[], fx:[], dance:0.3};
     for(var r=0;r<PZR;r++){ PZ.g.push([]); for(var c=0;c<PZC;c++){ var tp; do{ tp=pzRand(); } while((c>=2 && PZ.g[r][c-1].t===tp && PZ.g[r][c-2].t===tp) || (r>=2 && PZ.g[r-1][c].t===tp && PZ.g[r-2][c].t===tp)); PZ.g[r].push({t:tp, sp:null, oy:0, kill:0}); } }
     if(!pzFindMove()) pzShuffle();
   }
@@ -2614,33 +2614,100 @@ a.arcade-btn{text-decoration:none;display:inline-block}
     PZ.idle=0; PZ.hint=null; PZ.combo=0; PZ.sel=null;
     PZ.swap={a:a,b:b,t:0,back:false}; PZ.phase="swap"; beep(440,0.04,"square",0.04);
   }
-  function pzClear(m, swapCell){
-    var g=PZ.g, toClear={}, made=null;
-    Object.keys(m.set).forEach(function(k){ toClear[k]=1; });
-    // bicchieri speciali: 4 in fila = boccale d'oro (svuota la riga), 5 = fusto (jolly)
-    m.runs.forEach(function(run){ if(run.length>=4){ var keep=run[0];
-      if(swapCell) run.forEach(function(cc){ if(cc[0]===swapCell[0]&&cc[1]===swapCell[1]) keep=cc; });
-      made={r:keep[0], c:keep[1], sp: run.length>=5 ? "keg" : "gold", t:g[keep[0]][keep[1]].t}; } });
-    Object.keys(toClear).forEach(function(k){ var p=k.split(","), r=+p[0], c=+p[1], x=g[r][c];
-      if(x && x.sp==="gold"){ for(var cc=0;cc<PZC;cc++) toClear[r+","+cc]=1; PZ.msg={txt:"Boccale d'oro: giro offerto!",t:1.2}; } });
-    if(made){ delete toClear[made.r+","+made.c]; }
-    var n=0, faces=0; Object.keys(toClear).forEach(function(k){ var p=k.split(","), r=+p[0], c=+p[1]; if(g[r][c]){ if(g[r][c].t==="face") faces++; g[r][c].kill=0.001; n++; } });
-    if(faces>=3){ PZ.score+=50*faces; PZ.msg={txt:"FAVEROOOOO! +"+(50*faces),t:1.5}; [659,784,988,1319].forEach(function(f,j){ setTimeout(function(){ beep(f,0.08,"square",0.06); }, j*70); }); }
-    if(made){ var x2=g[made.r][made.c]; x2.sp=made.sp; if(made.sp==="keg") x2.t="keg"; x2.kill=0; }
+  function pzKey(r,c){ return r+","+c; }
+  // i bicchieri speciali che finiscono nell'esplosione si attivano a catena
+  function pzExpand(set){
+    var g=PZ.g, queue=Object.keys(set);
+    while(queue.length){
+      var k=queue.shift(), p=k.split(","), r=+p[0], c=+p[1], x=g[r][c], i;
+      if(!x || x.fired) continue;
+      if(x.sp==="gold"){ x.fired=true; PZ.fx.push({k:"row",r:r,t:0.45},{k:"col",c:c,t:0.45}); PZ.dance=Math.min(3,PZ.dance+1.2);
+        for(i=0;i<PZC;i++){ var a=pzKey(r,i); if(!set[a]){ set[a]=1; queue.push(a); } }
+        for(i=0;i<PZR;i++){ var b=pzKey(i,c); if(!set[b]){ set[b]=1; queue.push(b); } }
+        beep(1200,0.08,"square",0.05); }
+      else if(x.t==="keg"){ x.fired=true; var cnt={}; g.forEach(function(row){ row.forEach(function(y){ if(y.t!=="keg") cnt[y.t]=(cnt[y.t]||0)+1; }); });
+        var best=null; Object.keys(cnt).forEach(function(tp){ if(!best || cnt[tp]>cnt[best]) best=tp; });
+        PZ.fx.push({k:"flash",t:0.4}); PZ.dance=3;
+        for(var rr=0;rr<PZR;rr++) for(var cc=0;cc<PZC;cc++) if(g[rr][cc].t===best){ var q=pzKey(rr,cc); if(!set[q]){ set[q]=1; queue.push(q); } } }
+    }
+    return set;
+  }
+  // segna i bicchieri da far sparire, conta i punti e parte l'animazione
+  function pzKill(set, made, bonusMul){
+    var g=PZ.g, n=0, faces=0;
+    made.forEach(function(md){ delete set[pzKey(md.r,md.c)]; });
+    Object.keys(set).forEach(function(k){ var p=k.split(","), r=+p[0], c=+p[1]; if(g[r][c] && !g[r][c].kill){ if(g[r][c].t==="face") faces++; g[r][c].kill=0.001; n++; } });
+    made.forEach(function(md){ var x=g[md.r][md.c]; x.kill=0; x.fired=false; x.sp=md.sp; if(md.sp==="keg") x.t="keg"; });
     PZ.combo++;
-    var pts=n*10*PZ.combo; PZ.score+=pts;
+    var pts=n*10*PZ.combo*(bonusMul||1); PZ.score+=pts;
+    if(faces>=3){ PZ.score+=50*faces; PZ.msg={txt:"FAVEROOOOO! +"+(50*faces),t:1.5}; [659,784,988,1319].forEach(function(f,j){ setTimeout(function(){ beep(f,0.08,"square",0.06); }, j*70); }); }
     var gg=pzGeo(); pops.push({x:W/2,y:gg.oy-14,txt:"+"+pts+(PZ.combo>1?"  x"+PZ.combo:""),life:0.9});
-    if(PZ.combo===3) PZ.msg={txt:"Ancora una, dai!",t:1.2}; else if(PZ.combo===4) PZ.msg={txt:"Che giro!",t:1.2}; else if(PZ.combo>=5) PZ.msg={txt:"FAVEROOOOO!",t:1.4};
-    beep(500+PZ.combo*90,0.07,"square",0.05); if(made) setTimeout(function(){ beep(1047,0.1,"square",0.06); },80);
+    if(!PZ.msg || PZ.msg.t<0.6){ if(PZ.combo===3) PZ.msg={txt:"Ancora una, dai!",t:1.2}; else if(PZ.combo===4) PZ.msg={txt:"Che giro!",t:1.2}; else if(PZ.combo>=5) PZ.msg={txt:"FAVEROOOOO!",t:1.4}; }
+    PZ.dance=Math.min(3,PZ.dance+0.35+PZ.combo*0.25);
+    beep(500+PZ.combo*90,0.07,"square",0.05);
+    made.forEach(function(md){ setTimeout(function(){ beep(md.sp==="keg"?660:1047,0.12,"square",0.06); },80);
+      pops.push({x:gg.ox+md.c*gg.cs+gg.cs/2,y:gg.oy+md.r*gg.cs,txt: md.sp==="keg" ? "FUSTO!" : "BOCCALE D'ORO!",life:1.1}); });
     PZ.phase="clear"; PZ.t=0;
   }
-  function pzKeg(a,b){ // il fusto svuota tutti i bicchieri del tipo scambiato
-    var g=PZ.g, kegCell = g[a[0]][a[1]].t==="keg" ? a : b, other = kegCell===a ? b : a, tp=g[other[0]][other[1]].t, n=0;
-    for(var r=0;r<PZR;r++) for(var c=0;c<PZC;c++){ if(g[r][c].t===tp || (r===kegCell[0]&&c===kegCell[1])){ g[r][c].kill=0.001; n++; } }
-    PZ.combo=1; var pts=n*15; PZ.score+=pts; PZ.msg={txt:"Fusto! Tutti i bicchieri uguali spariscono",t:1.4};
-    pops.push({x:W/2,y:pzGeo().oy-14,txt:"+"+pts,life:1}); beep(200,0.2,"sawtooth",0.06); setTimeout(function(){ beep(1047,0.12,"square",0.06); },120);
-    PZ.phase="clear"; PZ.t=0;
+  function pzClear(m, swapCell){
+    var g=PZ.g, set={}, made=[], used={};
+    Object.keys(m.set).forEach(function(k){ set[k]=1; });
+    // 4 in fila = boccale d'oro (esplode a croce), 5 in fila = fusto (jolly)
+    m.runs.forEach(function(run){ if(run.length>=4){ var keep=run[Math.floor(run.length/2)];
+      if(swapCell) run.forEach(function(cc){ if(cc[0]===swapCell[0]&&cc[1]===swapCell[1]) keep=cc; });
+      var k=pzKey(keep[0],keep[1]); if(used[k]) return; used[k]=1;
+      made.push({r:keep[0], c:keep[1], sp: run.length>=5 ? "keg" : "gold"}); } });
+    pzExpand(set);
+    pzKill(set, made, 1);
   }
+  function pzKeg(a,b){ // fusto: spariscono tutti i bicchieri uguali a quello con cui l'hai scambiato
+    var g=PZ.g, A=g[a[0]][a[1]], B=g[b[0]][b[1]], kegCell = A.t==="keg" ? a : b, other = kegCell===a ? b : a, O=g[other[0]][other[1]], set={}, r, c;
+    g[kegCell[0]][kegCell[1]].fired=true;
+    set[pzKey(kegCell[0],kegCell[1])]=1;
+    if(O.t==="keg"){ for(r=0;r<PZR;r++) for(c=0;c<PZC;c++) set[pzKey(r,c)]=1; PZ.msg={txt:"DUE FUSTI: SI SVUOTA IL BANCONE!",t:1.6}; PZ.fx.push({k:"flash",t:0.6}); }
+    else {
+      var tp=O.t, goldMode=O.sp==="gold";
+      for(r=0;r<PZR;r++) for(c=0;c<PZC;c++) if(g[r][c].t===tp){ set[pzKey(r,c)]=1; if(goldMode) g[r][c].sp="gold"; }
+      PZ.msg={txt: goldMode ? "Fusto + boccale d'oro: esplodono tutti!" : "Fusto! Spariscono tutti i bicchieri uguali",t:1.5}; PZ.fx.push({k:"flash",t:0.4});
+    }
+    pzExpand(set);
+    PZ.combo=0; PZ.dance=3; beep(200,0.2,"sawtooth",0.06);
+    pzKill(set, [], 1.5);
+  }
+  function pzBigCross(cell){ // due boccali d'oro scambiati: croce larga 3
+    var set={}, r, c;
+    for(var d=-1;d<=1;d++){ var rr=cell[0]+d, cc=cell[1]+d;
+      if(rr>=0&&rr<PZR){ for(c=0;c<PZC;c++) set[pzKey(rr,c)]=1; PZ.fx.push({k:"row",r:rr,t:0.5}); }
+      if(cc>=0&&cc<PZC){ for(r=0;r<PZR;r++) set[pzKey(r,cc)]=1; PZ.fx.push({k:"col",c:cc,t:0.5}); } }
+    PZ.msg={txt:"DOPPIO BOCCALE D'ORO!",t:1.5}; PZ.combo=0; PZ.dance=3;
+    pzExpand(set); pzKill(set, [], 1.5);
+  }
+  // il ballerino: sei tu che balli a ritmo, più forte con le combo e i bonus
+  function pzDancer(x, base, h){
+    var e=PZ.dance, beat=t*1.8*Math.PI, u=h/40, flip = e>2 && Math.floor(t*1.8)%2===0 ? -1 : 1;
+    var hip=Math.sin(beat)*u*(1.5+e*1.2), jump = e>1.4 ? -Math.abs(Math.sin(beat))*u*5*Math.min(1,e-1.2) : 0;
+    cx.save(); cx.translate(x, base+jump); cx.scale(flip,1);
+    cx.fillStyle="rgba(0,0,0,.35)"; cx.beginPath(); cx.ellipse(0,-jump,u*9,u*1.8,0,0,7); cx.fill();
+    // gambe a zampa d'elefante bianche
+    var st=Math.sin(beat)*u*2;
+    cx.fillStyle="#f8fafc"; cx.fillRect(-u*5+hip*0.3,-u*14,u*4,u*14+st*0.3); cx.fillRect(u*1+hip*0.3,-u*14,u*4,u*14-st*0.3);
+    cx.fillStyle="#e2e8f0"; cx.fillRect(-u*6+hip*0.3,-u*3,u*5.5,u*3); cx.fillRect(u*0.5+hip*0.3,-u*3,u*5.5,u*3);
+    // camicia lucida da discoteca
+    cx.fillStyle="#a855f7"; roundRect(-u*6+hip,-u*26,u*12,u*13,u*2); cx.fill();
+    cx.fillStyle="#f0abfc"; for(var i=0;i<4;i++) cx.fillRect(-u*5+hip+i*u*3,-u*25+((i+Math.floor(t*6))%2)*u*4,u*1.2,u*1.2);
+    cx.fillStyle="#fde047"; cx.fillRect(-u*1.5+hip,-u*26,u*3,u*3);
+    // braccia che si muovono a tempo
+    var aL = -1.2 - Math.sin(beat)*(0.6+e*0.5), aR = -1.9 + Math.sin(beat)*(0.6+e*0.5);
+    [[-u*6+hip,aL],[u*6+hip,Math.PI-aR]].forEach(function(A,idx){ cx.save(); cx.translate(A[0],-u*24); cx.rotate(idx===0?A[1]:-A[1]+Math.PI);
+      cx.fillStyle="#a855f7"; cx.fillRect(0,-u*1.2,u*8,u*2.6); cx.fillStyle="#d9906c"; cx.fillRect(u*7.5,-u*1.4,u*2.4,u*2.8); cx.restore(); });
+    // testa pixel che dondola
+    if(frames){ cx.save(); cx.translate(hip*1.1,-u*26); cx.rotate(Math.sin(beat)*0.15*(1+e*0.3)); cx.imageSmoothingEnabled=false;
+      var fr = blinkT<0 ? frames.blink : (e>2.2 ? frames.pant : frames.base); var fh=u*15, fw=fh*28/46; cx.drawImage(fr,-fw/2,-fh,fw,fh); cx.restore(); }
+    cx.restore();
+    // note musicali e lucine quando balla forte
+    if(e>0.8){ for(var k=0;k<Math.ceil(e*2);k++){ var nx=x+Math.sin(t*2+k*2.1)*h*0.7, ny=base-h*0.9-((t*40+k*30)%(h*0.8)); cx.globalAlpha=0.8; drawNote(nx,ny,Math.max(3,u*1.2)); } cx.globalAlpha=1; }
+  }
+
   function pzGravity(){
     var g=PZ.g, gg=pzGeo();
     for(var c=0;c<PZC;c++){ var col=[]; for(var r=PZR-1;r>=0;r--){ if(!g[r][c].kill) col.push({x:g[r][c], r:r}); }
@@ -2651,6 +2718,8 @@ a.arcade-btn{text-decoration:none;display:inline-block}
     PZ.phase="fall";
   }
   function updatePuzzle(dt){
+    PZ.fx.forEach(function(f){ f.t-=dt; }); PZ.fx=PZ.fx.filter(function(f){ return f.t>0; });
+    PZ.dance=Math.max(0.3, PZ.dance-dt*0.35); blinkT-=dt; if(blinkT< -0.14) blinkT=2+Math.random()*2.5;
     var g=PZ.g, gg=pzGeo(), r, c;
     if(PZ.msg){ PZ.msg.t-=dt; if(PZ.msg.t<=0) PZ.msg=null; }
     PZ.conf.forEach(function(q){ q.x+=q.vx*dt; q.y+=q.vy*dt; q.vy+=300*dt; q.life-=dt; }); PZ.conf=PZ.conf.filter(function(q){ return q.life>0; });
@@ -2659,6 +2728,7 @@ a.arcade-btn{text-decoration:none;display:inline-block}
       if(s.t>=1){ pzSwapCells(s.a,s.b);
         if(s.back){ PZ.swap=null; PZ.phase="idle"; }
         else if(g[s.a[0]][s.a[1]].t==="keg" || g[s.b[0]][s.b[1]].t==="keg"){ PZ.swap=null; pzKeg(s.a,s.b); }
+        else if(g[s.a[0]][s.a[1]].sp==="gold" && g[s.b[0]][s.b[1]].sp==="gold"){ PZ.swap=null; pzBigCross(s.b); }
         else { var m=pzMatches(); if(m.n){ PZ.swap=null; pzClear(m, s.b); } else { PZ.swap={a:s.a,b:s.b,t:0,back:true}; beep(180,0.06,"square",0.04); } } } }
     else if(PZ.phase==="clear"){ PZ.t+=dt; for(r=0;r<PZR;r++) for(c=0;c<PZC;c++) if(g[r][c].kill) g[r][c].kill+=dt;
       if(PZ.t>0.22){ for(r=0;r<PZR;r++) for(c=0;c<PZC;c++) if(g[r][c].kill){ for(var k=0;k<3;k++) puffs.push({x:gg.ox+c*gg.cs+gg.cs/2,y:gg.oy+r*gg.cs+gg.cs/2,vx:(Math.random()-.5)*160,vy:(Math.random()-.5)*160,b:2,life:0.35}); }
@@ -2714,16 +2784,24 @@ a.arcade-btn{text-decoration:none;display:inline-block}
       pzIcon(0,0,cs,tile); cx.restore();
     }
     cx.restore();
+    // fasci di luce dei bonus
+    PZ.fx.forEach(function(f){ var a=Math.min(1,f.t*2.5);
+      if(f.k==="row"){ cx.fillStyle="rgba(253,224,71,"+(0.75*a)+")"; cx.fillRect(gg.ox-6,gg.oy+f.r*cs+cs*0.3,cs*PZC+12,cs*0.4); cx.fillStyle="rgba(255,255,255,"+a+")"; cx.fillRect(gg.ox-6,gg.oy+f.r*cs+cs*0.45,cs*PZC+12,cs*0.1); }
+      else if(f.k==="col"){ cx.fillStyle="rgba(253,224,71,"+(0.75*a)+")"; cx.fillRect(gg.ox+f.c*cs+cs*0.3,gg.oy-6,cs*0.4,cs*PZR+12); cx.fillStyle="rgba(255,255,255,"+a+")"; cx.fillRect(gg.ox+f.c*cs+cs*0.45,gg.oy-6,cs*0.1,cs*PZR+12); }
+      else { cx.fillStyle="rgba(255,255,255,"+(0.5*a)+")"; cx.fillRect(0,0,W,H); } });
+    // il ballerino (tu) sotto il bancone, o in alto se lo spazio è poco
+    var avail=H-(gg.oy+cs*PZR+44);
+    if(avail>=70) pzDancer(W/2, H-8, Math.min(120,avail-6)); else pzDancer(34, gg.oy-24, 52);
     // coriandoli, scritte
     PZ.conf.forEach(function(q){ cx.fillStyle=q.c; cx.fillRect(q.x,q.y,4,6); });
     puffs.forEach(function(p){ cx.globalAlpha=Math.min(1,p.life*2); cx.fillStyle="#fff8ec"; cx.fillRect(p.x-p.b,p.y-p.b,p.b*2,p.b*2); }); cx.globalAlpha=1;
-    if(PZ.msg){ cx.globalAlpha=Math.min(1,PZ.msg.t*2); cx.font="800 24px 'Baloo 2', 'Trebuchet MS', sans-serif"; cx.lineWidth=6; cx.strokeStyle="#0f172a"; cx.textAlign="center"; cx.textBaseline="middle";
+    if(PZ.msg){ cx.globalAlpha=Math.min(1,PZ.msg.t*2); var mfs=24; cx.font="800 "+mfs+"px 'Baloo 2', 'Trebuchet MS', sans-serif"; while(mfs>12 && cx.measureText(PZ.msg.txt).width>W-28){ mfs--; cx.font="800 "+mfs+"px 'Baloo 2', 'Trebuchet MS', sans-serif"; } cx.lineWidth=6; cx.strokeStyle="#0f172a"; cx.textAlign="center"; cx.textBaseline="middle";
       cx.strokeText(PZ.msg.txt,W/2,gg.oy+cs*PZR/2); cx.fillStyle="#fde68a"; cx.fillText(PZ.msg.txt,W/2,gg.oy+cs*PZR/2); cx.globalAlpha=1; }
     cx.textAlign="center"; cx.textBaseline="alphabetic";
     for(var i=0;i<pops.length;i++){ var pp=pops[i]; cx.globalAlpha=Math.min(1,pp.life*2); cx.font="800 20px 'Baloo 2', sans-serif"; cx.lineWidth=5; cx.strokeStyle="#0f172a"; cx.strokeText(pp.txt,pp.x,pp.y); cx.fillStyle="#fde68a"; cx.fillText(pp.txt,pp.x,pp.y); }
     cx.globalAlpha=1;
     cx.font="8px 'Press Start 2P', monospace"; cx.fillStyle="rgba(253,230,138,.7)"; cx.textBaseline="middle";
-    cx.fillText("SCORRI UN BICCHIERE PER SCAMBIARLO", W/2, Math.min(H-24, gg.oy+cs*PZR+28));
+    cx.fillText("SCORRI UN BICCHIERE PER SCAMBIARLO", W/2, gg.oy+cs*PZR+24);
   }
   function puzzleLoop(now){
     if(state!=="puzzle" || !PZ) return;
