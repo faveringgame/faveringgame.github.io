@@ -175,8 +175,9 @@ h2.red{color:#f43f5e}
   var faceImg = new Image(), frames = null;
 
   try{ best = parseInt(localStorage.getItem("birra-best")||"0",10)||0; }catch(e){}
-  try{ soundOn = localStorage.getItem("birra-sound")!=="off"; }catch(e){}
-  document.getElementById("sound").textContent = soundOn ? "🔊" : "🔇";
+  var soundMode="on";
+  try{ soundMode = localStorage.getItem("birra-sound")||"on"; }catch(e){}
+  soundOn = soundMode!=="off";
   document.getElementById("avatarImg").src = FACE;
 
   // fotogrammi del viso: normale, occhi chiusi, bocca aperta (affanno)
@@ -287,10 +288,11 @@ h2.red{color:#f43f5e}
     score=0; lives=3; level=(typeof lv==="number")?lv:1; ptsInLevel=0; drunk=0; items=[]; pops=[]; spawnT=0.6; drinks=0; rush=0; puffs=[];
     me.x=W/2; me.target=null; me.hurt=0; me.drink=null;
     enterLevel();
-    show(null); showIntro();
+    show(null); showIntro(); playMusic(levelTrack());
     beep(523,0.1); setTimeout(function(){beep(784,0.14);},100);
   }
   function gameOver(msg, won){
+    playMusic("menu");
     state="over";
     if(score>best){ best=score; try{localStorage.setItem("birra-best",String(best));}catch(e){} }
     document.getElementById("final").textContent=score;
@@ -300,8 +302,8 @@ h2.red{color:#f43f5e}
     show("over"); document.getElementById("banner").classList.add("hidden");
     beep(392,0.2); setTimeout(function(){beep(262,0.35);},180);
   }
-  function pause(){ if(state!=="play") return; state="pause"; show("paused"); }
-  function resume(){ if(state!=="pause") return; state="play"; show(null); last=performance.now(); requestAnimationFrame(loop); }
+  function pause(){ if(state!=="play") return; state="pause"; show("paused"); stopMusic(); }
+  function resume(){ if(state!=="pause") return; state="play"; show(null); MUS.timer=null; var nm=MUS.name; MUS.name=null; playMusic(nm||levelTrack()); last=performance.now(); requestAnimationFrame(loop); }
   function show(id){
     ["start","paused","over"].forEach(function(s){ document.getElementById(s).classList.toggle("hidden", s!==id); });
     var b = id && document.querySelector("#"+id+" .arcade-btn"); if(b) b.focus({preventScroll:true});
@@ -1256,6 +1258,7 @@ h2.red{color:#f43f5e}
         [660,880,660].forEach(function(n,j){ setTimeout(function(){ beep(n,0.07,"triangle",0.05); }, j*110); }); } });
     // la barista arrabbiata che deve chiudere il locale
     if(!PF.boss && !PF.bossDone && pcx>PF.arenaX+T*2){
+      playMusic("boss");
       PF.boss={x:PF.doorX-T*3, hp:BOSS_HP, max:BOSS_HP, dir:-1, throwT:1.8, flash:0, step:0, say:"SI CHIUDE!", sayT:2.2};
       pops.push({x:W/2,y:H*0.32,txt:"La barista vuole chiudere!",life:2,big:true}); beep(220,0.2,"sawtooth",0.07); setTimeout(function(){beep(165,0.3,"sawtooth",0.07);},180);
       if(PF.beersGot<BEERS_TO_THROW){ PF.beersGot=BEERS_TO_THROW; PF.ammo=Math.max(PF.ammo,4); pops.push({x:W/2,y:H*0.4,txt:"Lancia i tappi!",life:1.8}); }
@@ -1281,7 +1284,7 @@ h2.red{color:#f43f5e}
       if(B && Math.abs(sh.x-B.x)<T*0.8 && sh.y>G-T*2.7 && sh.y<G){ hit=true; B.hp--; B.flash=0.25; score+=1; B.say=pick(HIT_PHRASES); B.sayT=1;
         beep(400,0.06,"square",0.07); setTimeout(function(){beep(300,0.06,"square",0.06);},60);
         for(var q=0;q<5;q++) puffs.push({x:sh.x-PF.cam,y:sh.y,vx:(Math.random()-.5)*W*0.3,vy:(Math.random()-.5)*H*0.15,b:2,life:0.4});
-        if(B.hp<=0){ PF.boss=null; B=null; PF.bossDone=true; score+=15; PF.rags=[];
+        if(B.hp<=0){ PF.boss=null; B=null; PF.bossDone=true; score+=15; PF.rags=[]; playMusic("action");
           pops.push({x:W/2,y:H*0.32,txt:"Va bene... l'ultima! +15",life:2.2,big:true});
           [523,659,784,1047,1319].forEach(function(n,j){ setTimeout(function(){ beep(n,0.1,"square",0.06); }, j*90); }); } }
       if(!hit) for(k=0;k<PF.clocks.length;k++){ var ck=PF.clocks[k]; if(ck.alive && Math.abs(sh.x-ck.x)<T*0.6 && sh.y>G-T*1.1){ ck.alive=false; ck.sq=0.5; hit=true; score+=1; beep(300,0.06,"square",0.06); break; } }
@@ -1464,6 +1467,7 @@ h2.red{color:#f43f5e}
     if(!UNL) return;
     var intro=UNL.intro; level=UNL.to; UNL=null; state="play";
     if(!intro) enterLevel();
+    playMusic(levelTrack());
     updHud(); beep(784,0.08,"square",0.05); setTimeout(function(){ beep(1047,0.12,"square",0.05); },80);
     last=performance.now(); requestAnimationFrame(loop);
   }
@@ -1777,6 +1781,7 @@ h2.red{color:#f43f5e}
       SP.gx=W/2; SP.gy=Math.max(H*0.2,150); SP.dir=1; SP.total=SP.en.length;
       SP.waveT=1.6; pops.push({x:W/2,y:H*0.45,txt:"ONDATA "+SP.wave+" DI 3",life:1.6,big:true});
     } else {
+      playMusic("boss");
       SP.boss={x:W/2, y:Math.max(H*0.25,190), hp:40, max:40, dir:1, fireT:2, spawnT:4, flash:0, t:0};
       SP.waveT=2; pops.push({x:W/2,y:H*0.45,txt:"LA SVEGLIA GIGANTE!",life:2,big:true});
       beep(110,0.5,"sawtooth",0.08);
@@ -1852,7 +1857,7 @@ h2.red{color:#f43f5e}
             if(Math.random()<0.13){ var rk=Math.random(); SP.pups.push({k: rk<0.6 ? "bottle" : (rk<0.85 || lives>=3 ? "water" : "heart"), x:ep.x, y:ep.y}); }
           } else beep(500,0.03,"square",0.04); } }
       if(!hit && B && SP.waveT<=0 && Math.abs(s.x-B.x)<52 && Math.abs(s.y-B.y)<52){ hit=true; B.hp--; B.flash=0.1; score+=1; beep(420,0.03,"square",0.04);
-        if(B.hp<=0){ SP.boss=null; B=null; score+=20; SP.eb=[];
+        if(B.hp<=0){ SP.boss=null; B=null; score+=20; SP.eb=[]; playMusic("action");
           for(k=0;k<30;k++) puffs.push({x:W/2,y:H*0.3,vx:(Math.random()-.5)*W,vy:(Math.random()-.5)*H*0.6,b:4,life:1});
           pops.push({x:W/2,y:H*0.4,txt:"SVEGLIA SPENTA! +20",life:2.2,big:true});
           [523,659,784,1047,1319,1568].forEach(function(n,q){ setTimeout(function(){ beep(n,0.1,"square",0.06); }, q*90); });
@@ -1921,6 +1926,70 @@ h2.red{color:#f43f5e}
     cx.font="8px 'Press Start 2P', monospace"; cx.textAlign="left"; cx.textBaseline="top"; cx.fillStyle="#a5b4fc";
     cx.fillText(SP.wave<=3 ? "ONDATA "+SP.wave+"/3" : "BOSS FINALE", 12, 62);
   }
+
+  /* ===== MUSICA 8 BIT (brani originali, composti per questo gioco) ===== */
+  var musicOn = true;
+  function audioCtx(){ if(!actx){ try{ actx=new (window.AudioContext||window.webkitAudioContext)(); }catch(e){} } return actx; }
+  function mtof(m){ return 440*Math.pow(2,(m-69)/12); }
+  // note: nome+ottava -> midi ("A4"=69); "." = pausa
+  function nn(s){ if(s==="."||!s) return null; var map={C:0,D:2,E:4,F:5,G:7,A:9,B:11}, n=map[s[0]], i=1; if(s[1]==="#"){ n++; i=2; } return n+12*(parseInt(s.slice(i),10)+1); }
+  function seq(str){ return str.trim().split(/\s+/).map(nn); }
+  var TRACKS = {
+    menu: { bpm:108,
+      lead: seq("A4 . C5 . E5 . . . D5 . C5 . A4 . . .  F4 . A4 . C5 . . . B4 . A4 . F4 . . .  C5 . E5 . G5 . . . F5 . E5 . C5 . . .  B4 . D5 . G4 . . . A4 . B4 . D5 . . ."),
+      bass: seq("A2 . . . A2 . . . A2 . . . A2 . . .  F2 . . . F2 . . . F2 . . . F2 . . .  C3 . . . C3 . . . C3 . . . C3 . . .  G2 . . . G2 . . . G2 . . . G2 . . ."),
+      drums:"k...h...s...h...", leadType:"triangle" },
+    bar: { bpm:132,
+      lead: seq("A4 . C5 . E5 . C5 D5 . E5 . . G5 . E5 .  F5 . E5 . C5 . A4 . C5 . D5 . . C5 . .  E5 . G5 . C6 . G5 E5 . G5 . . A5 . G5 .  D5 . E5 . G5 . B4 . D5 . . B4 G4 . . ."),
+      bass: seq("A2 . A3 . A2 . A3 . A2 . A3 . A2 . A3 .  F2 . F3 . F2 . F3 . F2 . F3 . F2 . F3 .  C3 . C4 . C3 . C4 . C3 . C4 . C3 . C4 .  G2 . G3 . G2 . G3 . G2 . G3 . G2 . G3 ."),
+      drums:"k.h.s.h.k.h.s.hh", leadType:"square" },
+    action: { bpm:152,
+      lead: seq("E5 . B4 . E5 G5 . E5 F#5 . D5 . B4 . . .  C5 . G4 . C5 E5 . C5 D5 . E5 . G5 . . .  E5 . B4 . E5 G5 . B5 A5 . G5 . F#5 . E5 .  D5 . F#5 . A5 . F#5 . G5 . . F#5 E5 . . ."),
+      bass: seq("E2 E2 E3 E2 E2 E2 E3 E2 E2 E2 E3 E2 D2 D2 D3 D2  C2 C2 C3 C2 C2 C2 C3 C2 D2 D2 D3 D2 D2 D2 D3 D2  E2 E2 E3 E2 E2 E2 E3 E2 E2 E2 E3 E2 G2 G2 G3 G2  D2 D2 D3 D2 D2 D2 D3 D2 B1 B1 B2 B1 B1 B1 B2 B1"),
+      drums:"k.hhs.hkk.hhs.hh", leadType:"square" },
+    boss: { bpm:164,
+      lead: seq("E5 . . E5 F5 . E5 . D#5 . . . B4 . . .  E5 . . E5 G5 . F5 . E5 . . . D#5 . . .  C5 . . C5 D5 . C5 . B4 . . . A4 . B4 .  C5 . D5 . D#5 . E5 . F5 . E5 . D#5 . B4 ."),
+      bass: seq("E2 E2 E2 E2 F2 F2 E2 E2 E2 E2 E2 E2 D#2 D#2 E2 E2  E2 E2 E2 E2 G2 G2 F2 F2 E2 E2 E2 E2 D#2 D#2 E2 E2  C2 C2 C2 C2 D2 D2 C2 C2 B1 B1 B1 B1 A1 A1 B1 B1  C2 C2 D2 D2 D#2 D#2 E2 E2 F2 F2 E2 E2 D#2 D#2 B1 B1"),
+      drums:"k.k.s.hkk.k.s.hs", leadType:"sawtooth" },
+    taxi: { bpm:140,
+      lead: seq("C5 . E5 . G5 . E5 . C6 . G5 . E5 . . .  G4 . B4 . D5 . B4 . G5 . D5 . B4 . . .  A4 . C5 . E5 . C5 . A5 . E5 . C5 . D5 .  F4 . A4 . C5 . F5 . E5 . D5 . C5 . . ."),
+      bass: seq("C3 . C3 G2 C3 . C3 G2 C3 . C3 G2 C3 . E3 .  G2 . G2 D3 G2 . G2 D3 G2 . G2 D3 G2 . B2 .  A2 . A2 E3 A2 . A2 E3 A2 . A2 E3 A2 . C3 .  F2 . F2 C3 F2 . F2 C3 G2 . G2 D3 G2 . B2 ."),
+      drums:"k.h.s.hhk.h.s.hh", leadType:"square" }
+  };
+  var MUS = {name:null, step:0, next:0, timer:null, bus:null, noise:null};
+  function musicBus(){ var c=audioCtx(); if(!c) return null; if(!MUS.bus){ MUS.bus=c.createGain(); MUS.bus.gain.value=0.16; MUS.bus.connect(c.destination);
+      var len=c.sampleRate*0.2, buf=c.createBuffer(1,len,c.sampleRate), d=buf.getChannelData(0); for(var i=0;i<len;i++) d[i]=Math.random()*2-1; MUS.noise=buf; } return MUS.bus; }
+  function playTone(type,freq,t0,dur,vol){ var c=actx, o=c.createOscillator(), g=c.createGain(); o.type=type; o.frequency.setValueAtTime(freq,t0);
+    g.gain.setValueAtTime(0.0001,t0); g.gain.linearRampToValueAtTime(vol,t0+0.008); g.gain.exponentialRampToValueAtTime(0.0001,t0+dur);
+    o.connect(g); g.connect(MUS.bus); o.start(t0); o.stop(t0+dur+0.02); }
+  function playDrum(k,t0){ var c=actx;
+    if(k==="k"){ var o=c.createOscillator(), g=c.createGain(); o.type="sine"; o.frequency.setValueAtTime(150,t0); o.frequency.exponentialRampToValueAtTime(45,t0+0.12);
+      g.gain.setValueAtTime(0.9,t0); g.gain.exponentialRampToValueAtTime(0.001,t0+0.15); o.connect(g); g.connect(MUS.bus); o.start(t0); o.stop(t0+0.16); return; }
+    var s=c.createBufferSource(), f=c.createBiquadFilter(), g2=c.createGain(); s.buffer=MUS.noise;
+    f.type = k==="h" ? "highpass" : "bandpass"; f.frequency.value = k==="h" ? 7000 : 1800;
+    var dur = k==="h" ? 0.04 : 0.12; g2.gain.setValueAtTime(k==="h"?0.25:0.5,t0); g2.gain.exponentialRampToValueAtTime(0.001,t0+dur);
+    s.connect(f); f.connect(g2); g2.connect(MUS.bus); s.start(t0); s.stop(t0+dur+0.01); }
+  function musicTick(){
+    var c=actx, tr=TRACKS[MUS.name]; if(!c || !tr) return;
+    var st=60/tr.bpm/4, n=tr.lead.length;
+    while(MUS.next < c.currentTime+0.15){
+      var i=MUS.step%n, L=tr.lead[i], B=tr.bass[i%tr.bass.length], D=tr.drums[i%tr.drums.length];
+      if(L!==null) playTone(tr.leadType, mtof(L), MUS.next, st*1.8, tr.leadType==="sawtooth"?0.18:0.22);
+      if(B!==null) playTone("triangle", mtof(B), MUS.next, st*0.95, 0.45);
+      if(D && D!==".") playDrum(D, MUS.next);
+      MUS.next+=st; MUS.step++;
+    }
+  }
+  function playMusic(name){
+    if(!soundOn || !musicOn){ stopMusic(); MUS.name=name; return; }
+    var c=audioCtx(); if(!c || !musicBus()) return;
+    if(c.state==="suspended") c.resume();
+    if(MUS.name===name && MUS.timer) return;
+    stopMusic(); MUS.name=name; MUS.step=0; MUS.next=c.currentTime+0.05;
+    MUS.timer=setInterval(musicTick,25);
+  }
+  function stopMusic(){ if(MUS.timer){ clearInterval(MUS.timer); MUS.timer=null; } }
+  function levelTrack(){ if(isTaxi()) return "taxi"; if(isPlatform()||isSpace()) return "action"; return "bar"; }
 
   /* ===== LIVELLO 7: RITORNO A CASA IN TAXI ===== */
   var TX = null, ROAD_LEN = 70;
@@ -2172,11 +2241,18 @@ h2.red{color:#f43f5e}
   document.getElementById("again").onclick=function(){ start(1); };
   document.getElementById("resume").onclick=resume;
   document.getElementById("pause").onclick=function(){ state==="play"?pause():resume(); };
+  // pulsante suono: tutto acceso -> solo effetti (senza musica) -> tutto spento
+  function soundIcon(){ document.getElementById("sound").textContent = soundMode==="on" ? "🎵" : (soundMode==="nomusic" ? "🔊" : "🔇");
+    document.getElementById("sound").setAttribute("aria-label", soundMode==="on" ? "Musica ed effetti accesi" : (soundMode==="nomusic" ? "Solo effetti" : "Audio spento")); }
   document.getElementById("sound").onclick=function(){
-    soundOn=!soundOn; this.textContent=soundOn?"🔊":"🔇";
-    try{localStorage.setItem("birra-sound",soundOn?"on":"off");}catch(e){}
+    soundMode = soundMode==="on" ? "nomusic" : (soundMode==="nomusic" ? "off" : "on");
+    soundOn = soundMode!=="off"; musicOn = soundMode==="on";
+    try{localStorage.setItem("birra-sound",soundMode);}catch(e){}
+    soundIcon();
     if(soundOn) beep(660,0.08);
+    if(musicOn) playMusic(state==="play"||state==="unlock" ? levelTrack() : "menu"); else stopMusic();
   };
+  musicOn = soundMode==="on"; soundIcon();
   document.addEventListener("visibilitychange",function(){ if(document.hidden) pause(); });
   window.addEventListener("resize",resize);
   resize();
