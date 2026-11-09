@@ -1198,7 +1198,7 @@ a.arcade-btn{text-decoration:none;display:inline-block}
   function isPlatform(){ return level===2; }
   function pfGround(){ return deckOn ? H-56 : H-150; }
   function startPlatform(){
-    var T=Math.max(26, Math.round(Math.min(W/12, H/22))), N=180, ARENA=22;
+    var T=Math.max(30, Math.round(Math.min(W/8.2, H/12.5))), N=180, ARENA=22;
     var holes={}, solid={}, caps=[], beers=[], waters=[], clocks=[], girls=[], birds=[], c=10, i, r;
     function put(cc,rr){ solid[cc+","+rr]=1; }
     while(c<N-ARENA-4){
@@ -1384,7 +1384,7 @@ a.arcade-btn{text-decoration:none;display:inline-block}
       if(!hit) for(k=0;k<PF.clocks.length;k++){ var ck=PF.clocks[k]; if(ck.alive && Math.abs(sh.x-ck.x)<T*0.6 && sh.y>G-T*1.1){ ck.alive=false; ck.sq=0.5; hit=true; score+=1; beep(300,0.06,"square",0.06); break; } }
       if(!hit) for(k=0;k<PF.birds.length;k++){ var bb2=PF.birds[k]; if(bb2.alive && Math.abs(sh.x-bb2.x)<T*0.6 && Math.abs(sh.y-bb2.y)<T*0.6){ bb2.alive=false; bb2.sq=0.6; hit=true; score+=1; beep(700,0.05,"square",0.05); break; } }
       if(hit || sh.y>G || Math.abs(sh.x-pcx)>W) PF.shots.splice(i,1); }
-    PF.cam=Math.max(0, Math.min(PF.N*T-W, pcx-W*0.4));
+    PF.cam=Math.max(0, Math.min(PF.N*T-W, pcx-W*0.36));
     // la porta del bar (si apre solo dopo aver convinto la barista)
     if(PF.bossDone && PF.shutter>=1 && pcx>PF.doorX){ PF.done=2; score+=10; pops.push({x:W/2,y:H*0.38,txt:"SA BIÈT? +10",life:2,big:true});
       [523,659,784,1047,784,1047].forEach(function(n,j){ setTimeout(function(){ beep(n,0.1,"square",0.06); }, j*90); }); }
@@ -1559,7 +1559,7 @@ a.arcade-btn{text-decoration:none;display:inline-block}
       cx.font="7px 'Press Start 2P', monospace"; cx.textAlign="center"; cx.fillStyle="#fca5a5"; cx.fillText("BARISTA ARRABBIATA",W/2,hby-11);
       for(var s2=0;s2<B.max;s2++){ cx.fillStyle = s2<B.hp ? "#ef4444" : "#334155"; cx.fillRect(hbx+s2*hbw/B.max+1,hby,hbw/B.max-2,8); } }
     if(PF.hint>0){ var hm=deckOn ? "ANALOGICO PER CORRERE  ·  SALTA DUE VOLTE" : "SCORRI ◀ ▶ PER CORRERE  ·  TOCCA PER SALTARE"; cx.font="7px 'Press Start 2P', monospace"; var htw=cx.measureText(hm).width+14;
-      cx.fillStyle="rgba(15,23,42,.85)"; cx.fillRect(W/2-htw/2,H-112,htw,20); cx.fillStyle="#fde68a"; cx.textAlign="center"; cx.textBaseline="middle"; cx.fillText(hm,W/2,H-102); }
+      cx.fillStyle="rgba(15,23,42,.85)"; cx.fillRect(W/2-htw/2,96,htw,20); cx.fillStyle="#fde68a"; cx.textAlign="center"; cx.textBaseline="middle"; cx.fillText(hm,W/2,106); }
     drawTouchPad();
     drawRush();
     cx.textAlign="center"; cx.textBaseline="alphabetic";
