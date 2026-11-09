@@ -1951,7 +1951,7 @@ a.arcade-btn{text-decoration:none;display:inline-block}
     }
     // nemici in formazione
     var alive=SP.en.filter(function(e){ return e.alive; });
-    if(SP.wave<=3 && !alive.length && !SP.waveT){ nextSpaceWave(); return; }
+    if(SP.wave<=3 && !alive.length && SP.waveT<=0){ nextSpaceWave(); return; }
     if(alive.length){
       var minX=Infinity,maxX=-Infinity; alive.forEach(function(e){ if(!e.dive){ minX=Math.min(minX,e.fx); maxX=Math.max(maxX,e.fx); } });
       var vel=W*(0.09+0.03*SP.wave)*(1+1.3*(1-alive.length/SP.total))*fast;
