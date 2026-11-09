@@ -10,8 +10,8 @@
 <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
 <meta name="apple-mobile-web-app-title" content="Favering">
 <link rel="manifest" href="manifest.webmanifest">
-<link rel="icon" href="icona-192.png">
-<link rel="apple-touch-icon" href="icona-180.png">
+<link rel="icon" href="favering-192.png">
+<link rel="apple-touch-icon" href="favering-180.png">
 <style>
 @font-face{font-family:"Press Start 2P";src:url("pressstart2p.ttf") format("truetype");font-display:swap}
 @font-face{font-family:"Baloo 2";src:url("baloo2.ttf") format("truetype");font-weight:400 800;font-display:swap}
@@ -32,6 +32,19 @@ body{background:#0f172a;color:#f8fafc;font-family:"Baloo 2","Trebuchet MS",Arial
 body::before{content:"";position:fixed;inset:0 0 auto;height:env(safe-area-inset-top,0px);z-index:10;background:#0f172a}
 #game{position:relative;width:100%;height:100%;touch-action:none}
 canvas{display:block;width:100%;height:100%}
+#deck{position:absolute;left:0;right:0;bottom:0;height:var(--deckH,180px);display:none;align-items:center;gap:8px;padding:10px 18px calc(10px + env(safe-area-inset-bottom,0px));
+  background:linear-gradient(#26203a,#120f1f);border-top:3px solid #f59e0b;box-shadow:0 -6px 18px rgba(0,0,0,.5);z-index:3;touch-action:none}
+#deck.swap{flex-direction:row-reverse}
+#btnZone,#stickZone{flex:1;height:100%;display:flex;align-items:center;justify-content:center;gap:14px}
+#stickZone{touch-action:none}
+#stickBase{width:118px;height:118px;border-radius:50%;background:radial-gradient(circle at 50% 45%,#3b3355,#1a1528);border:3px solid rgba(255,255,255,.18);box-shadow:inset 0 4px 12px rgba(0,0,0,.6);display:flex;align-items:center;justify-content:center}
+#stickKnob{width:58px;height:58px;border-radius:50%;background:radial-gradient(circle at 40% 35%,#fde68a,#f59e0b 55%,#b45309);border:3px solid #78350f;box-shadow:0 5px 10px rgba(0,0,0,.5);pointer-events:none;transition:transform .05s}
+#btnA,#btnB{width:74px;height:74px;border-radius:50%;border:4px solid rgba(0,0,0,.35);font-family:"Press Start 2P","Courier New",monospace;font-size:.5rem;color:#fff;cursor:pointer;box-shadow:0 6px 0 rgba(0,0,0,.45);touch-action:none}
+#btnA{background:radial-gradient(circle at 40% 35%,#fb7185,#e11d48)} #btnB{background:radial-gradient(circle at 40% 35%,#fde047,#ca8a04);margin-top:-36px}
+#btnA.on,#btnB.on{transform:translateY(4px);box-shadow:0 2px 0 rgba(0,0,0,.45)}
+#btnB.off{opacity:.35}
+#deckLogo{color:#f59e0b;font-size:.62rem;opacity:.8;text-align:center;line-height:1.8}
+#swapBtn{position:absolute;top:8px;left:50%;transform:translateX(-50%);width:34px;height:24px;border-radius:8px;border:1px solid rgba(255,255,255,.25);background:rgba(15,23,42,.6);color:#fde68a;font-size:.8rem;cursor:pointer;padding:0}
 .hud{position:absolute;top:10px;left:8px;right:8px;display:flex;flex-wrap:nowrap;align-items:center;gap:5px;pointer-events:none}
 .pill{background:var(--panel);color:var(--ink);border-radius:999px;padding:2px 9px;font-weight:800;font-size:.98rem;line-height:1.4;white-space:nowrap;box-shadow:0 3px 0 rgba(0,0,0,.35)}
 .meter{display:flex;align-items:center;gap:5px}
@@ -40,7 +53,7 @@ canvas{display:block;width:100%;height:100%}
 .spacer{flex:1}
 .icon{pointer-events:auto;border:0;background:var(--panel);color:var(--ink);width:36px;height:36px;flex:none;border-radius:50%;font-size:1.05rem;box-shadow:0 3px 0 rgba(0,0,0,.35);cursor:pointer}
 .icon:focus-visible{outline:3px solid #fbbf24;outline-offset:3px}
-.screen{position:absolute;inset:0;display:flex;flex-direction:column;align-items:center;justify-content:center;padding:20px;text-align:center;
+.screen{position:absolute;inset:0;z-index:4;display:flex;flex-direction:column;align-items:center;justify-content:center;padding:20px;text-align:center;
   background:rgba(15,23,42,.92);overflow:hidden}
 .screen::before{content:"";position:absolute;inset:0;pointer-events:none;
   background:linear-gradient(rgba(18,16,16,0) 50%,rgba(0,0,0,.25) 50%),linear-gradient(90deg,rgba(255,0,0,.06),rgba(0,255,0,.02),rgba(0,0,255,.06));
@@ -105,6 +118,15 @@ a.arcade-btn{text-decoration:none;display:inline-block}
     <button class="icon" id="pause" aria-label="Pausa">⏸</button>
   </div>
 
+  <div id="deck" aria-label="Comandi di gioco">
+    <div id="btnZone">
+      <button id="btnA" aria-label="Salta">SALTA</button>
+      <button id="btnB" aria-label="Lancia">LANCIA</button>
+      <div id="deckLogo" class="px">FAVERING</div>
+    </div>
+    <div id="stickZone" aria-label="Analogico"><div id="stickBase"><div id="stickKnob"></div></div></div>
+    <button id="swapBtn" aria-label="Scambia analogico e pulsanti">⇄</button>
+  </div>
   <div id="pfpad" aria-label="Comandi">
     <button class="l" aria-label="Sinistra">◀</button><button class="r" aria-label="Destra">▶</button><button class="t" aria-label="Lancia un tappo">LANCIA</button><button class="j" aria-label="Salta">SALTA</button>
   </div>
@@ -171,7 +193,8 @@ a.arcade-btn{text-decoration:none;display:inline-block}
   function nextLevel(l){ for(var n=l+1;n<=TAXI_LEVEL;n++) if(READY.indexOf(n)>=0) return n; return TAXI_LEVEL; }
   function isTaxi(){ return level===TAXI_LEVEL; }
   function enterLevel(){
-    me.dir=0; me.diry=0;
+    me.dir=0; me.diry=0; stickReset();
+    setDeck(levelUsesDeck());
     if(isTaxi()){ startTaxi(); return; }
     buildBg(); items=[];
     if(isShooter()) startShooter();
@@ -217,7 +240,10 @@ a.arcade-btn{text-decoration:none;display:inline-block}
 
   function resize(){
     var r = game.getBoundingClientRect();
-    W=r.width; H=r.height; DPR=Math.min(window.devicePixelRatio||1,2);
+    var dk = deckOn ? Math.round(Math.min(190, Math.max(150, r.height*0.24))) : 0;
+    document.getElementById("deck").style.setProperty("--deckH", dk+"px");
+    W=r.width; H=r.height-dk; DPR=Math.min(window.devicePixelRatio||1,2);
+    cv.style.height = H+"px";
     cv.width=Math.round(W*DPR); cv.height=Math.round(H*DPR);
     cx.setTransform(DPR,0,0,DPR,0,0);
     groundY = H*0.88;
@@ -313,6 +339,7 @@ a.arcade-btn{text-decoration:none;display:inline-block}
     beep(523,0.1); setTimeout(function(){beep(784,0.14);},100);
   }
   function gameOver(msg, won){
+    setDeck(false); stickReset();
     playMusic("menu");
     state="over";
     if(score>best){ best=score; try{localStorage.setItem("birra-best",String(best));}catch(e){} }
@@ -345,7 +372,8 @@ a.arcade-btn{text-decoration:none;display:inline-block}
     setHud("drunk","width",Math.round(drunk*100)+"%");
     document.querySelector(".meter").style.display = isTaxi() ? "none" : "";
     setHud("dpad","display","none");
-    setHud("pfpad","display",(isPlatform() && state==="play") ? "block" : "none");
+    setHud("pfpad","display",(isPlatform() && state==="play" && !deckOn) ? "block" : "none");
+    if(deckOn && isPlatform() && PF){ var bb=document.getElementById("btnB"); bb.classList.toggle("off", PF.beersGot<BEERS_TO_THROW); }
     document.querySelector("#pfpad .t").style.display = (isPlatform() && PF && PF.beersGot>=BEERS_TO_THROW) ? "block" : "none";
   }
 
@@ -981,7 +1009,7 @@ a.arcade-btn{text-decoration:none;display:inline-block}
     if(WC.hint>0) WC.hint-=dt;
     if(WC.inv>0) WC.inv-=dt;
     // affaticato e dondolante: lento, ondeggia e ogni tanto barcolla
-    var spd=W*0.30*(1-0.45*drunk);
+    var spd=W*0.30*(1-0.45*drunk)*((me.dir||me.diry) ? Math.min(1,Math.hypot(me.dir||0,me.diry||0)) : 1);
     // movimento con le frecce sullo schermo (o da tastiera)
     if(WC.stuck>0) WC.stuck-=dt;
     var tx=WC.bx, ty=WC.by;
@@ -1153,7 +1181,7 @@ a.arcade-btn{text-decoration:none;display:inline-block}
     cx.fillStyle="rgba(15,23,42,.85)"; cx.fillRect(bx-4,by-16,bw+8,30);
     cx.fillStyle="#334155"; cx.fillRect(bx,by,bw,10); cx.fillStyle = pr>0.5 ? "#4ade80" : (pr>0.25 ? "#facc15" : "#ef4444"); cx.fillRect(bx,by,bw*pr,10);
     cx.font="8px 'Press Start 2P', monospace"; cx.textAlign="center"; cx.textBaseline="bottom"; cx.fillStyle = pr<0.25 && Math.floor(t*6)%2 ? "#ef4444" : "#fff"; cx.fillText("SCAPPA!",bx+bw/2,by-3);
-    if(WC.hint>0){ var msg="TOCCA DOVE VUOI ANDARE!"; cx.font="8px 'Press Start 2P', monospace"; var tw=cx.measureText(msg).width+16;
+    if(WC.hint>0){ var msg=deckOn ? "USA L’ANALOGICO (O TOCCA)" : "TOCCA DOVE VUOI ANDARE!"; cx.font="8px 'Press Start 2P', monospace"; var tw=cx.measureText(msg).width+16;
       cx.fillStyle="rgba(15,23,42,.8)"; cx.fillRect(W/2-tw/2,H-76,tw,20); cx.fillStyle="#fde68a"; cx.textBaseline="middle"; cx.fillText(msg,W/2,H-66); }
     drawRush();
     cx.textAlign="center"; cx.textBaseline="alphabetic";
@@ -1168,7 +1196,7 @@ a.arcade-btn{text-decoration:none;display:inline-block}
   var RAG_PHRASES = ["SI CHIUDE!","FUORI!","È TARDI!","HO DETTO BASTA!","SEDIE SU!"];
   var HIT_PHRASES = ["Ahi!","Smettila!","Si chiude ho detto!","Ma insomma!","Chiamo il capo!"];
   function isPlatform(){ return level===2; }
-  function pfGround(){ return H-150; }
+  function pfGround(){ return deckOn ? H-56 : H-150; }
   function startPlatform(){
     var T=Math.max(26, Math.round(Math.min(W/12, H/22))), N=180, ARENA=22;
     var holes={}, solid={}, caps=[], beers=[], waters=[], clocks=[], girls=[], birds=[], c=10, i, r;
@@ -1530,7 +1558,7 @@ a.arcade-btn{text-decoration:none;display:inline-block}
       cx.fillStyle="rgba(15,23,42,.85)"; cx.fillRect(hbx-4,hby-14,hbw+8,28);
       cx.font="7px 'Press Start 2P', monospace"; cx.textAlign="center"; cx.fillStyle="#fca5a5"; cx.fillText("BARISTA ARRABBIATA",W/2,hby-11);
       for(var s2=0;s2<B.max;s2++){ cx.fillStyle = s2<B.hp ? "#ef4444" : "#334155"; cx.fillRect(hbx+s2*hbw/B.max+1,hby,hbw/B.max-2,8); } }
-    if(PF.hint>0){ var hm="SCORRI ◀ ▶ PER CORRERE  ·  TOCCA PER SALTARE"; cx.font="7px 'Press Start 2P', monospace"; var htw=cx.measureText(hm).width+14;
+    if(PF.hint>0){ var hm=deckOn ? "ANALOGICO PER CORRERE  ·  SALTA DUE VOLTE" : "SCORRI ◀ ▶ PER CORRERE  ·  TOCCA PER SALTARE"; cx.font="7px 'Press Start 2P', monospace"; var htw=cx.measureText(hm).width+14;
       cx.fillStyle="rgba(15,23,42,.85)"; cx.fillRect(W/2-htw/2,H-112,htw,20); cx.fillStyle="#fde68a"; cx.textAlign="center"; cx.textBaseline="middle"; cx.fillText(hm,W/2,H-102); }
     drawTouchPad();
     drawRush();
@@ -1870,7 +1898,7 @@ a.arcade-btn{text-decoration:none;display:inline-block}
   /* ===== LIVELLO 4: MISSIONE SPAZIALE DAL BAR RETRÒ (NAVICELLA) ===== */
   var SP = null;
   function isSpace(){ return level===4; }
-  function shipY(){ return H-120; }
+  function shipY(){ return deckOn ? H-70 : H-120; }
   function startSpace(){
     var stars=[]; for(var i=0;i<45;i++) stars.push({x:Math.random()*W, y:Math.random()*H, z:0.3+Math.random()*1.2});
     SP={wave:0, en:[], shots:[], eb:[], pups:[], fireT:0.5, dbl:0, boss:null, gx:W/2, gy:0, dir:1, diveT:3, waveT:0, stars:stars, inv:0, planet:0};
@@ -2541,8 +2569,8 @@ a.arcade-btn{text-decoration:none;display:inline-block}
   function bagnoTouch(e){ if(!WC) return; var q=ptPos(e); WC.goal={x:q.x, y:q.y}; WC.mark=0; }
 
   /* ===== PASSATEMPO: GIRO DI BICCHIERI (allinea 3 uguali) ===== */
-  var PZ=null, PZC=7, PZR=8, PZTYPES=["bottle","mug","amaro","water","coffee","cap"];
-  var PZCOL={bottle:"#7c2d12", mug:"#92400e", amaro:"#4c1d95", water:"#0e7490", coffee:"#3f6212", cap:"#9f1239", keg:"#334155"};
+  var PZ=null, PZC=7, PZR=8, PZTYPES=["bottle","mug","amaro","water","coffee","cap","face"];
+  var PZCOL={face:"#1d4ed8", bottle:"#7c2d12", mug:"#92400e", amaro:"#4c1d95", water:"#0e7490", coffee:"#3f6212", cap:"#9f1239", keg:"#334155"};
   var pzBest=0; try{ pzBest=parseInt(localStorage.getItem("favering-giro-best")||"0",10)||0; }catch(e){}
   function pzGeo(){ var cs=Math.floor(Math.min((W-24)/PZC, (H-250)/PZR)); return {cs:cs, ox:Math.round((W-cs*PZC)/2), oy:Math.round(Math.max(130,(H-cs*PZR)/2+30))}; }
   function pzRand(){ return PZTYPES[Math.floor(Math.random()*PZTYPES.length)]; }
@@ -2552,7 +2580,7 @@ a.arcade-btn{text-decoration:none;display:inline-block}
     if(!pzFindMove()) pzShuffle();
   }
   function enterPuzzle(){
-    show(null); state="puzzle"; document.querySelector(".hud").style.display="none"; document.getElementById("pzBack").style.display="block";
+    show(null); state="puzzle"; setDeck(false); document.querySelector(".hud").style.display="none"; document.getElementById("pzBack").style.display="block";
     startPuzzle(); playMusic("menu"); last=performance.now(); requestAnimationFrame(puzzleLoop);
     beep(523,0.08); setTimeout(function(){ beep(784,0.1); },90);
   }
@@ -2593,7 +2621,8 @@ a.arcade-btn{text-decoration:none;display:inline-block}
     Object.keys(toClear).forEach(function(k){ var p=k.split(","), r=+p[0], c=+p[1], x=g[r][c];
       if(x && x.sp==="gold"){ for(var cc=0;cc<PZC;cc++) toClear[r+","+cc]=1; PZ.msg={txt:"Boccale d'oro: giro offerto!",t:1.2}; } });
     if(made){ delete toClear[made.r+","+made.c]; }
-    var n=0; Object.keys(toClear).forEach(function(k){ var p=k.split(","), r=+p[0], c=+p[1]; if(g[r][c]){ g[r][c].kill=0.001; n++; } });
+    var n=0, faces=0; Object.keys(toClear).forEach(function(k){ var p=k.split(","), r=+p[0], c=+p[1]; if(g[r][c]){ if(g[r][c].t==="face") faces++; g[r][c].kill=0.001; n++; } });
+    if(faces>=3){ PZ.score+=50*faces; PZ.msg={txt:"FAVEROOOOO! +"+(50*faces),t:1.5}; [659,784,988,1319].forEach(function(f,j){ setTimeout(function(){ beep(f,0.08,"square",0.06); }, j*70); }); }
     if(made){ var x2=g[made.r][made.c]; x2.sp=made.sp; if(made.sp==="keg") x2.t="keg"; x2.kill=0; }
     PZ.combo++;
     var pts=n*10*PZ.combo; PZ.score+=pts;
@@ -2651,6 +2680,7 @@ a.arcade-btn{text-decoration:none;display:inline-block}
     else if(tp==="coffee"){ cx.save(); cx.translate(x,y+s*0.04); cx.scale(s/52,s/52); drawCoffee(0,0); cx.restore(); }
     else if(tp==="cap") drawCap(x,y,s*1.15,true);
     else if(tp==="keg") drawKeg(x,y,s*0.26);
+    else if(tp==="face" && frames){ cx.save(); cx.beginPath(); cx.arc(x,y,s*0.36,0,7); cx.clip(); cx.imageSmoothingEnabled=false; cx.drawImage(frames.base, x-s*0.27, y-s*0.42, s*0.54, s*0.89); cx.restore(); }
     if(tile.sp==="gold" && tp!=="mug"){ cx.strokeStyle="#fde047"; cx.lineWidth=3; cx.beginPath(); cx.arc(x,y,s*0.42,0,7); cx.stroke(); }
   }
   function drawPuzzle(){
@@ -2705,6 +2735,30 @@ a.arcade-btn{text-decoration:none;display:inline-block}
   function pzUp(e){ var d=PZ && PZ.down; if(!d) return; PZ.down=null; if(d.done || !d.cell) return;
     if(PZ.sel && Math.abs(PZ.sel[0]-d.cell[0])+Math.abs(PZ.sel[1]-d.cell[1])===1){ pzTry(PZ.sel,d.cell); PZ.sel=null; }
     else { PZ.sel=d.cell; beep(700,0.03,"square",0.03); } }
+
+  /* ===== PLANCIA COMANDI: analogico + pulsanti (layout da console) ===== */
+  var deckOn=false, deckSwap=false, STK={id:null, x:0, y:0};
+  try{ deckSwap = localStorage.getItem("favering-swap")==="1"; }catch(e){}
+  function levelUsesDeck(){ return state!=="puzzle" && (level===1 || isPlatform() || isBagno() || isSpace() || isTaxi()); }
+  function setDeck(on){
+    var d=document.getElementById("deck"); deckOn=!!on;
+    d.style.display = deckOn ? "flex" : "none";
+    d.classList.toggle("swap", deckSwap);
+    var A=document.getElementById("btnA"), B=document.getElementById("btnB"), logo=document.getElementById("deckLogo");
+    var plat = deckOn && isPlatform();
+    A.style.display = plat ? "" : "none"; B.style.display = plat ? "" : "none"; logo.style.display = plat ? "none" : "";
+    if(deckOn){ logo.textContent = isSpace() ? "SPARA DA SOLO" : (isTaxi() ? "GUIDA" : "FAVERING"); }
+    resize();
+  }
+  function stickSet(e){
+    var base=document.getElementById("stickBase").getBoundingClientRect(), cxB=base.left+base.width/2, cyB=base.top+base.height/2, R=base.width/2;
+    var dx=(e.clientX-cxB)/R, dy=(e.clientY-cyB)/R, m=Math.hypot(dx,dy);
+    if(m>1){ dx/=m; dy/=m; m=1; }
+    STK.x = m<0.15 ? 0 : dx; STK.y = m<0.15 ? 0 : dy;
+    document.getElementById("stickKnob").style.transform="translate("+(dx*R*0.62)+"px,"+(dy*R*0.62)+"px)";
+    me.target=null; me.dir=STK.x; me.diry=STK.y;
+  }
+  function stickReset(){ STK.id=null; STK.x=0; STK.y=0; me.dir=0; me.diry=0; document.getElementById("stickKnob").style.transform="translate(0,0)"; }
 
   /* ===== LIVELLO 7: RITORNO A CASA IN TAXI ===== */
   var TX = null, ROAD_LEN = 70;
@@ -2969,6 +3023,19 @@ a.arcade-btn{text-decoration:none;display:inline-block}
     b.onclick=function(){ if(installEvt){ installEvt.prompt(); installEvt.userChoice.then(function(){ installEvt=null; }); return; } show("installInfo"); };
     document.getElementById("instBack").onclick=function(){ show("start"); };
     window.addEventListener("appinstalled",function(){ b.style.display="none"; });
+  })();
+  (function(){
+    var z=document.getElementById("stickZone");
+    z.addEventListener("pointerdown",function(e){ e.preventDefault(); e.stopPropagation(); STK.id=e.pointerId; try{ z.setPointerCapture(e.pointerId); }catch(er){} stickSet(e); });
+    z.addEventListener("pointermove",function(e){ e.stopPropagation(); if(e.pointerId===STK.id) stickSet(e); });
+    ["pointerup","pointercancel"].forEach(function(ev){ z.addEventListener(ev,function(e){ e.stopPropagation(); if(e.pointerId===STK.id) stickReset(); }); });
+    var A=document.getElementById("btnA"), B=document.getElementById("btnB");
+    A.addEventListener("pointerdown",function(e){ e.preventDefault(); e.stopPropagation(); jumpHeld=false; if(PF) PF.jumpLock=false; jumpHeld=true; A.classList.add("on"); });
+    ["pointerup","pointercancel","pointerleave"].forEach(function(ev){ A.addEventListener(ev,function(e){ e.stopPropagation(); jumpHeld=false; A.classList.remove("on"); }); });
+    B.addEventListener("pointerdown",function(e){ e.preventDefault(); e.stopPropagation(); throwHeld=true; B.classList.add("on"); });
+    ["pointerup","pointercancel","pointerleave"].forEach(function(ev){ B.addEventListener(ev,function(e){ e.stopPropagation(); throwHeld=false; B.classList.remove("on"); }); });
+    document.getElementById("deck").addEventListener("pointerdown",function(e){ e.stopPropagation(); });
+    document.getElementById("swapBtn").onclick=function(e){ e.stopPropagation(); deckSwap=!deckSwap; try{ localStorage.setItem("favering-swap",deckSwap?"1":"0"); }catch(er){} document.getElementById("deck").classList.toggle("swap",deckSwap); beep(660,0.05,"square",0.05); };
   })();
   document.getElementById("puzzle").onclick=enterPuzzle;
   document.getElementById("pzBack").onclick=function(){ exitPuzzle(); playMusic("menu"); };
