@@ -981,7 +981,7 @@ h2.red{color:#f43f5e}
           if(drunk>=1){ lives--; me.hurt=0.8; drunk=0.45; pops.push({x:W/2,y:H*0.5,txt:"Troppo! Ti siedi un attimo",life:1.6,big:true}); vibrate(150);
             if(lives<=0){ gameOver("Troppi brindisi offerti: il bagno può aspettare!"); return false; } }
         } else {
-          WC.stuck=1.7; WC.stuckType="girl"; pops.push({x:WC.px,y:WC.py-60,txt:"Ci balli?",life:1.4});
+          WC.stuck=1.7; WC.stuckType="girl"; pops.push({x:WC.px,y:WC.py-60,txt:"FAVEROOOHHH!",life:1.4});
           [660,880,660].forEach(function(n,j){ setTimeout(function(){ beep(n,0.07,"triangle",0.05); }, j*110); });
         }
       }
@@ -1010,7 +1010,7 @@ h2.red{color:#f43f5e}
       cx.fillStyle="#5b1a0c"; cx.fillRect(x+3.6*u,ay-u,2.4*u,3*u); cx.fillStyle="#c9a646"; cx.fillRect(x+3.6*u,ay-u,2.4*u,u*0.7);
     }
     if(ch.near){
-      var txt = ch.type==="girl" ? "CI BALLI?" : "OFFRO IO!";
+      var txt = ch.type==="girl" ? "FAVEROOOHHH" : "OFFRO IO!";
       cx.font="7px 'Press Start 2P', monospace"; var tw=cx.measureText(txt).width+10;
       cx.fillStyle="#fff"; cx.fillRect(x-tw/2,y-19*u-12,tw,14); cx.fillRect(x-u,y-19*u+2,2*u,u);
       cx.fillStyle = ch.type==="girl" ? "#db2777" : "#0f172a"; cx.textAlign="center"; cx.textBaseline="middle"; cx.fillText(txt,x,y-19*u-5);
