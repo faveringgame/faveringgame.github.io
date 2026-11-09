@@ -1,5 +1,5 @@
 // Favering: funziona anche offline. Cambiare VERSIONE a ogni aggiornamento del gioco.
-var VERSIONE = "favering-v11";
+var VERSIONE = "favering-v12";
 var FILE = ["./", "index.html", "manifest.webmanifest", "icona-192.png", "icona-512.png", "icona-180.png", "pressstart2p.ttf", "baloo2.ttf"];
 self.addEventListener("install", function(e){
   e.waitUntil(caches.open(VERSIONE).then(function(c){ return c.addAll(FILE); }).then(function(){ return self.skipWaiting(); }));
