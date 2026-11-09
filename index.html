@@ -84,9 +84,9 @@ a.arcade-btn{text-decoration:none;display:inline-block}
 #pfpad{position:absolute;left:0;right:0;bottom:calc(14px + env(safe-area-inset-bottom,0px));height:64px;display:none;pointer-events:none}
 #pfpad button{position:absolute;bottom:0;height:60px;border-radius:14px;border:2px solid rgba(255,255,255,.35);background:rgba(15,23,42,.32);color:rgba(255,255,255,.85);pointer-events:auto;touch-action:none;cursor:pointer;padding:0;font-size:1.2rem}
 #pfpad button.on{background:rgba(245,158,11,.55);border-color:#fbbf24}
-#pfpad .l{left:14px;width:64px} #pfpad .r{left:86px;width:64px}
+#pfpad .l,#pfpad .r,#pfpad .j{display:none!important}
 #pfpad .j{right:14px;width:90px;font-family:"Press Start 2P","Courier New",monospace;font-size:.6rem}
-#pfpad .t{right:112px;width:84px;font-family:"Press Start 2P","Courier New",monospace;font-size:.55rem;display:none;border-color:rgba(251,191,36,.6)}
+#pfpad .t{right:14px;width:96px;font-family:"Press Start 2P","Courier New",monospace;font-size:.55rem;display:none;border-color:rgba(251,191,36,.6)}
 #dpad .u{left:44px;top:0} #dpad .d{left:44px;top:88px} #dpad .l{left:0;top:44px} #dpad .r{left:88px;top:44px}
 @media (prefers-reduced-motion: reduce){.avatar{animation:none}}
 </style>
@@ -156,12 +156,12 @@ a.arcade-btn{text-decoration:none;display:inline-block}
   var FACE = "data:image/png;base64,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";
   // ogni livello un bar di Sovere: nome, colori parete, bancone, lucine
   var BARS = [
-    {n:"Bar Pizzeria Le Piante",   w1:"#0b2530", w2:"#1f6f6a", c:"#6b3d1e", f:"#2a160a", l:["#4ade80","#f43f5e","#fbbf24"]},
-    {n:"Bar Rossi 2.0",            w1:"#1f1033", w2:"#5b1a2e", c:"#6b2a1a", f:"#2a140c", l:["#f43f5e","#fbbf24"]},
-    {n:"Le Petit Café",            w1:"#14213d", w2:"#3d5a80", c:"#7a4e2d", f:"#2b1d12", l:["#fde68a","#fff"]},
-    {n:"Bar Ristorante Retrò",     w1:"#2d1b3d", w2:"#7b4b94", c:"#3f2a56", f:"#1f1428", l:["#22d3ee","#f0abfc"]},
-    {n:"Bar Le More",              w1:"#0f2a1d", w2:"#2f6b4a", c:"#5c3a1a", f:"#22150a", l:["#a3e635","#fbbf24"]},
-    {n:"No Limits Café",           w1:"#331a12", w2:"#9a4a2a", c:"#4a2c17", f:"#21130a", l:["#f97316","#fde047"]}
+    {n:"Bar Le Pianticelle",   w1:"#0b2530", w2:"#1f6f6a", c:"#6b3d1e", f:"#2a160a", l:["#4ade80","#f43f5e","#fbbf24"]},
+    {n:"Bar Rosso 3.0",            w1:"#1f1033", w2:"#5b1a2e", c:"#6b2a1a", f:"#2a140c", l:["#f43f5e","#fbbf24"]},
+    {n:"Le Petit Bistrot",            w1:"#14213d", w2:"#3d5a80", c:"#7a4e2d", f:"#2b1d12", l:["#fde68a","#fff"]},
+    {n:"Bar Vintage",     w1:"#2d1b3d", w2:"#7b4b94", c:"#3f2a56", f:"#1f1428", l:["#22d3ee","#f0abfc"]},
+    {n:"Bar Le Fragole",              w1:"#0f2a1d", w2:"#2f6b4a", c:"#5c3a1a", f:"#22150a", l:["#a3e635","#fbbf24"]},
+    {n:"Senza Freni Café",           w1:"#331a12", w2:"#9a4a2a", c:"#4a2c17", f:"#21130a", l:["#f97316","#fde047"]}
   ];
   var PTS_PER_LEVEL = 20, TAXI_LEVEL = 7, ptsInLevel = 0;
   // livelli giocabili (i giochi arcade dedicati arrivano uno alla volta)
@@ -330,7 +330,7 @@ a.arcade-btn{text-decoration:none;display:inline-block}
   }
   function showBanner(){
     document.getElementById("b1").textContent = "LIVELLO "+level;
-    document.getElementById("b2").textContent = isTaxi() ? "RITORNO A CASA IN TAXI" : isSpace() ? "IL RETRÒ VOLANTE!" : isStack() ? "IMPILA LE CASSE DEL FURGONE!" : isWhack() ? "SONO LE 5: ZITTISCI LE SVEGLIE!" : isPlatform() ? "CORRI FINO AL BAR ROSSI!" : isBagno() ? "SCAPPA IN BAGNO! EVITA LE BARISTE" : (isBarista() ? "STASERA FAI TU IL BARISTA!" : (isShooter() ? "SPARA I TAPPI ALLE SVEGLIE!" : (level===1 ? "SI PARTE!" : "CAMBIO BAR!")));
+    document.getElementById("b2").textContent = isTaxi() ? "RITORNO A CASA IN TAXI" : isSpace() ? "IL VINTAGE VOLANTE!" : isStack() ? "IMPILA LE CASSE DEL FURGONE!" : isWhack() ? "SONO LE 5: ZITTISCI LE SVEGLIE!" : isPlatform() ? "CORRI FINO AL BAR ROSSO!" : isBagno() ? "SCAPPA IN BAGNO! EVITA LE BARISTE" : (isBarista() ? "STASERA FAI TU IL BARISTA!" : (isShooter() ? "SPARA I TAPPI ALLE SVEGLIE!" : (level===1 ? "SI PARTE!" : "CAMBIO BAR!")));
     document.getElementById("banner").classList.remove("hidden"); bannerT=2.2;
   }
   var hudCache={};
@@ -342,7 +342,7 @@ a.arcade-btn{text-decoration:none;display:inline-block}
     setHud("level","text",(isTaxi() && TX) ? "🚕 "+TX.pax+"/3" : "Liv. "+level);
     setHud("drunk","width",Math.round(drunk*100)+"%");
     document.querySelector(".meter").style.display = isTaxi() ? "none" : "";
-    setHud("dpad","display",(isBagno() && state==="play") ? "block" : "none");
+    setHud("dpad","display","none");
     setHud("pfpad","display",(isPlatform() && state==="play") ? "block" : "none");
     document.querySelector("#pfpad .t").style.display = (isPlatform() && PF && PF.beersGot>=BEERS_TO_THROW) ? "block" : "none";
   }
@@ -948,7 +948,7 @@ a.arcade-btn{text-decoration:none;display:inline-block}
   var WC = null;
   function isBagno(){ return level===3; }
   function wcTop(){ return Math.max(H*0.26, 190); }
-  function wcBottom(){ return H-170; }
+  function wcBottom(){ return H-110; }
   function startBagno(){
     WC={trip:1, bx:W/2, by:wcBottom()-20, px:W/2, py:wcBottom()-20, inv:0, bar:24, barMax:24, tables:[], baristas:[], waters:[], hint:4, lurch:0, lurchT:2, chasers:[], stuck:0, stuckType:""};
     me.dir=0; me.diry=0;
@@ -982,7 +982,9 @@ a.arcade-btn{text-decoration:none;display:inline-block}
     var spd=W*0.30*(1-0.45*drunk);
     // movimento con le frecce sullo schermo (o da tastiera)
     if(WC.stuck>0) WC.stuck-=dt;
-    var tx=WC.bx+(me.dir||0)*100, ty=WC.by+(me.diry||0)*100;
+    var tx=WC.bx, ty=WC.by;
+    if(WC.goal){ tx=WC.goal.x; ty=WC.goal.y; if(Math.hypot(tx-WC.bx,ty-WC.by)<8) WC.goal=null; }
+    if(me.dir||me.diry){ tx=WC.bx+(me.dir||0)*100; ty=WC.by+(me.diry||0)*100; WC.goal=null; }
     if(WC.stuck>0){ tx=WC.bx; ty=WC.by; }
     var dx=tx-WC.bx, dy=ty-WC.by, d=Math.hypot(dx,dy);
     if(d>2){ var m=Math.min(d,spd*dt); WC.bx+=dx/d*m; WC.by+=dy/d*m; }
@@ -1140,13 +1142,17 @@ a.arcade-btn{text-decoration:none;display:inline-block}
     }
     if(WC.stuck>0 && WC.stuckType==="girl"){ for(var hh=0;hh<3;hh++){ var hy2=WC.py-60-((t*40+hh*18)%50), hx2=WC.px-20+hh*20;
       cx.fillStyle="#f472b6"; cx.fillRect(hx2-4,hy2,4,4); cx.fillRect(hx2+2,hy2,4,4); cx.fillRect(hx2-5,hy2+3,12,4); cx.fillRect(hx2-3,hy2+7,8,3); cx.fillRect(hx2-1,hy2+10,4,2); } }
+    if(WC.goal){ var gx=WC.goal.x, gy=WC.goal.y, pul=1+Math.sin(t*8)*0.15;
+      cx.strokeStyle="rgba(253,230,138,.8)"; cx.lineWidth=3; cx.beginPath(); cx.ellipse(gx,gy+12,18*pul,7*pul,0,0,7); cx.stroke();
+      cx.fillStyle="#f8fafc"; cx.fillRect(gx-8,gy-6,16,16); cx.fillStyle="#cbd5e1"; cx.fillRect(gx-8,gy-6,16,3); cx.fillStyle="#94a3b8"; cx.fillRect(gx-3,gy-6,6,3);
+      cx.fillStyle="#f8fafc"; cx.fillRect(gx+8,gy+4,10,6); }
     // barra "SCAPPA!"
-    var bx=156, bw=Math.max(90,W-bx-16), by=H-34, pr=Math.max(0,WC.bar/WC.barMax);
+    var bw=Math.min(W*0.6,240), bx=W/2-bw/2, by=H-34, pr=Math.max(0,WC.bar/WC.barMax);
     cx.fillStyle="rgba(15,23,42,.85)"; cx.fillRect(bx-4,by-16,bw+8,30);
     cx.fillStyle="#334155"; cx.fillRect(bx,by,bw,10); cx.fillStyle = pr>0.5 ? "#4ade80" : (pr>0.25 ? "#facc15" : "#ef4444"); cx.fillRect(bx,by,bw*pr,10);
     cx.font="8px 'Press Start 2P', monospace"; cx.textAlign="center"; cx.textBaseline="bottom"; cx.fillStyle = pr<0.25 && Math.floor(t*6)%2 ? "#ef4444" : "#fff"; cx.fillText("SCAPPA!",bx+bw/2,by-3);
-    if(WC.hint>0){ var msg="USA LE FRECCE: CORRI IN BAGNO!"; cx.font="8px 'Press Start 2P', monospace"; var tw=cx.measureText(msg).width+16;
-      cx.fillStyle="rgba(15,23,42,.8)"; cx.fillRect(W/2-tw/2,H-176,tw,20); cx.fillStyle="#fde68a"; cx.textBaseline="middle"; cx.fillText(msg,W/2,H-166); }
+    if(WC.hint>0){ var msg="TOCCA DOVE VUOI ANDARE!"; cx.font="8px 'Press Start 2P', monospace"; var tw=cx.measureText(msg).width+16;
+      cx.fillStyle="rgba(15,23,42,.8)"; cx.fillRect(W/2-tw/2,H-76,tw,20); cx.fillStyle="#fde68a"; cx.textBaseline="middle"; cx.fillText(msg,W/2,H-66); }
     drawRush();
     cx.textAlign="center"; cx.textBaseline="alphabetic";
     for(i=0;i<pops.length;i++){ var p=pops[i]; cx.globalAlpha=Math.min(1,p.life*2);
@@ -1187,7 +1193,7 @@ a.arcade-btn{text-decoration:none;display:inline-block}
         birds:birds.map(function(o){ return {x:o.c*T, y0:G-o.r*T, y:G-o.r*T, ph:Math.random()*6, alive:true, sq:0}; }),
         shots:[], rags:[], buckets:[], puddles:[], shutter:0, defeat:null, beersGot:0, ammo:0, boss:null, bossDone:false, arenaX:(N-ARENA)*T, arenaBeerT:2,
         p:{x:2*T, y:G-1.6*T, w:T*0.7, h:T*1.6, vx:0, vy:0, on:false}, doorX:(N-6)*T};
-    me.dir=0; me.diry=0; jumpHeld=false; throwHeld=false;
+    me.dir=0; me.diry=0; jumpHeld=false; throwHeld=false; PT.id=null; PF.hint=4;
   }
   function pfSolid(x,y){
     var T=PF.T, G=pfGround(), c=Math.floor(x/T);
@@ -1202,6 +1208,7 @@ a.arcade-btn{text-decoration:none;display:inline-block}
     if(PF.inv>0) PF.inv-=dt;
     if(PF.stuck>0) PF.stuck-=dt;
     if(PF.spin>0) PF.spin-=dt;
+    if(PF.hint>0) PF.hint-=dt;
     if(PF.shake>0) PF.shake-=dt;
     function tick(){
       for(var j=pops.length-1;j>=0;j--){ pops[j].life-=dt; pops[j].y-=40*dt; if(pops[j].life<=0) pops.splice(j,1); }
@@ -1242,7 +1249,7 @@ a.arcade-btn{text-decoration:none;display:inline-block}
         if(top===G && !PF.holes[Math.floor((p.x+p.w/2)/T)]) PF.check=p.x; } }
     else if(p.vy<0){ if(pfSolid(p.x+2,p.y)||pfSolid(p.x+p.w-2,p.y)){ var rr=Math.floor((G-p.y)/T)+1; p.y=G-(rr-1)*T+0.01; p.vy=0; beep(160,0.05,"square",0.04); } }
     if(p.y>H+40){ lives--; me.hurt=0.8; pops.push({x:W/2,y:H*0.45,txt:"Che volo!",life:1.2,big:true}); beep(200,0.1,"square",0.07); setTimeout(function(){beep(120,0.3,"square",0.07);},100); vibrate(140);
-      if(lives<=0){ gameOver("Caduto in una buca: al Bar Rossi non ci sei arrivato!"); return; }
+      if(lives<=0){ gameOver("Caduto in una buca: al Bar Rosso non ci sei arrivato!"); return; }
       p.x=PF.check; p.y=G-p.h-T*3; p.vx=0; p.vy=0; PF.inv=1.5; }
     var pcx=p.x+p.w/2, pcy=p.y+p.h/2;
     // tappi, birre (munizioni) e acqua
@@ -1267,7 +1274,7 @@ a.arcade-btn{text-decoration:none;display:inline-block}
       if(PF.holes[Math.floor(ahead/T)] || pfSolid(ahead,G-T*0.5) || ahead<T || ahead>PF.arenaX) k.dir*=-1; else k.x=nx;
       if(Math.abs(k.x-pcx)<T*0.75 && p.y+p.h>G-T && p.y<G){
         if(p.vy>0 && p.y+p.h<G-T*0.35){ k.alive=false; k.sq=0.5; p.vy=-v0*0.6; score+=2; pops.push({x:k.x-PF.cam,y:G-T*1.5,txt:"Zitta! +2",life:0.9}); beep(300,0.06,"square",0.07); setTimeout(function(){beep(200,0.08,"square",0.07);},60); }
-        else if(hurt(k.x,"Le sveglie ti hanno fermato prima del Bar Rossi!","Driiin!")) return;
+        else if(hurt(k.x,"Le sveglie ti hanno fermato prima del Bar Rosso!","Driiin!")) return;
       } }
     // piccioni in volo
     for(i=0;i<PF.birds.length;i++){ var bd=PF.birds[i];
@@ -1276,7 +1283,7 @@ a.arcade-btn{text-decoration:none;display:inline-block}
       bd.x-=T*2.2*fast*dt; bd.y=bd.y0+Math.sin(t*3+bd.ph)*T*0.45;
       if(Math.abs(bd.x-pcx)<T*0.65 && Math.abs(bd.y-pcy)<T*0.95){
         if(p.vy>0 && p.y+p.h<bd.y){ bd.alive=false; bd.sq=0.6; p.vy=-v0*0.6; score+=2; pops.push({x:bd.x-PF.cam,y:bd.y-T,txt:"Via! +2",life:0.9}); beep(700,0.05,"square",0.05); }
-        else if(hurt(bd.x,"Un piccione ti ha fermato prima del Bar Rossi!","Grr!")) return;
+        else if(hurt(bd.x,"Un piccione ti ha fermato prima del Bar Rosso!","Grr!")) return;
       } }
     // ragazze: FAVEROOOHHH e ti fermano un attimo
     PF.girls.forEach(function(gl){ if(gl.gone) return; if(gl.x-PF.cam > W+T*2) return;
@@ -1460,7 +1467,7 @@ a.arcade-btn{text-decoration:none;display:inline-block}
     var bx=PF.doorX-T*2.5-cam, bw=T*7;
     if(bx<W && bx+bw>0){ cx.fillStyle="#5b1a2e"; cx.fillRect(bx,G-T*5,bw,T*5); cx.fillStyle="#3b0f1d"; cx.fillRect(bx-6,G-T*5.3,bw+12,T*0.4);
       cx.fillStyle="#0b0b14"; cx.fillRect(bx+T*0.5,G-T*4.6,bw-T,T*1.1); cx.strokeStyle="#f43f5e"; cx.lineWidth=3; cx.shadowColor="#f43f5e"; cx.shadowBlur=12; cx.strokeRect(bx+T*0.5,G-T*4.6,bw-T,T*1.1); cx.shadowBlur=0;
-      cx.fillStyle="#fff"; cx.font=Math.max(8,Math.round(T*0.38))+"px 'Press Start 2P', monospace"; cx.textAlign="center"; cx.textBaseline="middle"; cx.fillText("BAR ROSSI 2.0",bx+bw/2,G-T*4.05);
+      cx.fillStyle="#fff"; cx.font=Math.max(8,Math.round(T*0.38))+"px 'Press Start 2P', monospace"; cx.textAlign="center"; cx.textBaseline="middle"; cx.fillText("BAR ROSSO 3.0",bx+bw/2,G-T*4.05);
       cx.fillStyle="#fcd34d"; cx.fillRect(bx+T*2,G-T*2.6,T*3,T*2.6);
       if(PF.bossDone){ cx.fillStyle="#7c4a2a"; cx.fillRect(bx+T*2.2,G-T*2.4,T*2.6,T*2.4);
         var shH=T*2.5*(1-PF.shutter); if(shH>1){ cx.fillStyle="#6b7280"; cx.fillRect(bx+T*2.1,G-T*2.5,T*2.8,shH); cx.fillStyle="#4b5563"; for(var sl2=0;sl2*T*0.42<shH;sl2++) cx.fillRect(bx+T*2.1,G-T*2.5+sl2*T*0.42,T*2.8,3); }
@@ -1514,13 +1521,16 @@ a.arcade-btn{text-decoration:none;display:inline-block}
     // barre in alto: percorso, munizioni, barista
     var pbw=W-40, pbx=20, pby=58, prog=Math.min(1,(p.x)/(PF.doorX));
     cx.fillStyle="rgba(15,23,42,.85)"; cx.fillRect(pbx-4,pby-4,pbw+8,16); cx.fillStyle="#334155"; cx.fillRect(pbx,pby,pbw,8); cx.fillStyle="#f43f5e"; cx.fillRect(pbx,pby,pbw*prog,8);
-    cx.font="8px 'Press Start 2P', monospace"; cx.textAlign="right"; cx.textBaseline="top"; cx.fillStyle="#fff"; cx.fillText("BAR ROSSI",pbx+pbw,pby+14);
+    cx.font="8px 'Press Start 2P', monospace"; cx.textAlign="right"; cx.textBaseline="top"; cx.fillStyle="#fff"; cx.fillText("BAR ROSSO",pbx+pbw,pby+14);
     cx.textAlign="left"; cx.fillStyle="#fde68a";
     cx.fillText(PF.beersGot<BEERS_TO_THROW ? "BIRRE "+PF.beersGot+"/"+BEERS_TO_THROW+" PER LANCIARE" : "TAPPI DA LANCIARE: "+PF.ammo, pbx, pby+14);
     if(PF.boss){ var B=PF.boss, hbw=Math.min(W*0.6,220), hbx=W/2-hbw/2, hby=112;
       cx.fillStyle="rgba(15,23,42,.85)"; cx.fillRect(hbx-4,hby-14,hbw+8,28);
       cx.font="7px 'Press Start 2P', monospace"; cx.textAlign="center"; cx.fillStyle="#fca5a5"; cx.fillText("BARISTA ARRABBIATA",W/2,hby-11);
       for(var s2=0;s2<B.max;s2++){ cx.fillStyle = s2<B.hp ? "#ef4444" : "#334155"; cx.fillRect(hbx+s2*hbw/B.max+1,hby,hbw/B.max-2,8); } }
+    if(PF.hint>0){ var hm="SCORRI ◀ ▶ PER CORRERE  ·  TOCCA PER SALTARE"; cx.font="7px 'Press Start 2P', monospace"; var htw=cx.measureText(hm).width+14;
+      cx.fillStyle="rgba(15,23,42,.85)"; cx.fillRect(W/2-htw/2,H-112,htw,20); cx.fillStyle="#fde68a"; cx.textAlign="center"; cx.textBaseline="middle"; cx.fillText(hm,W/2,H-102); }
+    drawTouchPad();
     drawRush();
     cx.textAlign="center"; cx.textBaseline="alphabetic";
     for(i=0;i<pops.length;i++){ var pp=pops[i]; cx.globalAlpha=Math.min(1,pp.life*2);
@@ -1533,9 +1543,9 @@ a.arcade-btn{text-decoration:none;display:inline-block}
   try{ unlocked=Math.max(1, parseInt(localStorage.getItem("favering-unlock")||"1",10)||1); testMode=localStorage.getItem("favering-prova")==="1"; }catch(e){}
   var HOWTO = {
     1:["PIOGGIA DI BIRRE", "Trascina il dito: bevi al volo birre e amari.", "Evita le sveglie, l’acqua ti fa riprendere.", "Obiettivo: 20 punti."],
-    2:["CORSA AL BAR ROSSI", "◀ ▶ per correre, SALTA per saltare: premi di nuovo in aria per il DOPPIO SALTO.", "Dopo 5 birre compare LANCIA: tira i tappi.", "Convinci la barista arrabbiata ed entra nel bar."],
-    3:["DI CORSA IN BAGNO", "Usa le frecce per arrivare alla porta del WC.", "Evita bariste, chi offre da bere e le ragazze.", "Arriva prima che finisca la barra SCAPPA!"],
-    4:["IL RETRÒ VOLANTE", "Sei su uno sgabello a reazione: trascina il dito, spara tappi da solo.", "3 ondate di sveglie e telefoni nel locale, poi il Juke-box impazzito.", "Le birre danno il colpo doppio, l’acqua ti raddrizza."],
+    2:["CORSA AL BAR ROSSO", "Scorri il dito a destra o sinistra per correre. Tocca per saltare, tocca di nuovo in aria per il DOPPIO SALTO.", "Dopo 5 birre compare LANCIA: tira i tappi.", "Convinci la barista arrabbiata ed entra nel bar."],
+    3:["DI CORSA IN BAGNO", "Tocca dove vuoi andare: lui ci va barcollando (puoi anche trascinare).", "Evita bariste, chi offre da bere e le ragazze.", "Arriva prima che finisca la barra SCAPPA!"],
+    4:["IL VINTAGE VOLANTE", "Sei su uno sgabello a reazione: trascina il dito, spara tappi da solo.", "3 ondate di sveglie e telefoni nel locale, poi il Juke-box impazzito.", "Le birre danno il colpo doppio, l’acqua ti raddrizza."],
     5:["IMPILA LE CASSE", "La gru fa dondolare la cassa: tocca per mollarla.", "Se sporge troppo cade. Centrata è PERFETTA (+3).", "Obiettivo: impila 10 casse fino al traguardo."],
     6:["LE 5 DEL MATTINO", "Dormivi, ma suonano le sveglie: toccale prima che squillino.", "Tocca anche i telefoni del capo. I caffè ti svegliano.", "La barista NON va toccata. Obiettivo: 20 punti."],
     7:["RITORNO A CASA", "Trascina il dito per guidare il taxi.", "Accosta quando gli amici gridano FAVEROOOOO e lasciali a CASA.", "Evita le macchine fino al cartello SOVERE."]
@@ -1701,7 +1711,7 @@ a.arcade-btn{text-decoration:none;display:inline-block}
         } else {
           ST.fallers.push({x:f.x, y:f.y, vy:f.vy*0.3, vx:(dx>0?1:-1)*W*0.4, rot:0, keg:f.keg, w:f.w});
           lives--; me.hurt=0.8; pops.push({x:W/2,y:H*0.45,txt:"Cassa persa!",life:1.3,big:true}); beep(140,0.3,"sawtooth",0.08); vibrate(140);
-          if(lives<=0){ gameOver("Troppe casse per terra: al Bar Le More si beve dal rubinetto!"); return; }
+          if(lives<=0){ gameOver("Troppe casse per terra: al Bar Le Fragole si beve dal rubinetto!"); return; }
         }
         ST.fall=null; newHanging();
       }
@@ -1964,7 +1974,7 @@ a.arcade-btn{text-decoration:none;display:inline-block}
       if(B.beat>0) B.beat-=dt;
       if(B.phase>=2){ B.spawnT-=dt; if(B.spawnT<=0){ B.spawnT=5.5; [-1,1].forEach(function(sd){ SP.en.push({kind:"clock", fx:0, fy:0, alive:true, ph:0, hp:1, dive:{t:0,x0:B.x+sd*50,y0:B.y,tx:me.x,shot:false}}); }); } }
       if(Math.abs(B.x-me.x)<60 && Math.abs(B.y-sy)<70){ if(SP.inv<=0){ lives--; me.hurt=0.8; SP.inv=1.6; pops.push({x:me.x,y:sy-50,txt:"Travolto!",life:1}); beep(130,0.3,"sawtooth",0.08); vibrate(120);
-        if(lives<=0){ gameOver("Travolto dal juke-box: la festa al Retrò è finita!"); return; } } }
+        if(lives<=0){ gameOver("Travolto dal juke-box: la festa al Vintage è finita!"); return; } } }
     }
     if(SP.defeat){ var D=SP.defeat; D.t+=dt; D.vy+=H*0.8*dt; if(D.t>0.9){ D.y+=D.vy*dt; D.rot+=dt*2; }
       if(Math.random()<dt*20) puffs.push({x:D.x+(Math.random()-.5)*80,y:D.y+(Math.random()-.5)*80,vx:(Math.random()-.5)*60,vy:-40,b:3,life:0.6});
@@ -1992,7 +2002,7 @@ a.arcade-btn{text-decoration:none;display:inline-block}
       for(var k2=0;k2<8;k2++) puffs.push({x:me.x,y:sy,vx:(Math.random()-.5)*W*0.4,vy:(Math.random()-.5)*H*0.2,b:3,life:0.5});
       if(lives<=0){ gameOver(msg); return true; } return false; }
     for(i=SP.eb.length-1;i>=0;i--){ var b=SP.eb[i]; b.x+=b.vx*dt*fast; b.y+=b.vy*dt*fast;
-      if(Math.abs(b.x-me.x)<18 && Math.abs(b.y-sy)<22){ SP.eb.splice(i,1); if(hitShip("Sgabello colpito: la festa al Retrò finisce qui!")) return; continue; }
+      if(Math.abs(b.x-me.x)<18 && Math.abs(b.y-sy)<22){ SP.eb.splice(i,1); if(hitShip("Sgabello colpito: la festa al Vintage finisce qui!")) return; continue; }
       if(b.y>H+20||b.x<-20||b.x>W+20) SP.eb.splice(i,1); }
     for(i=0;i<SP.en.length;i++){ var e2=SP.en[i]; if(!e2.alive||!e2.dive) continue; var pe=enPos(e2);
       if(Math.abs(pe.x-me.x)<r+12 && Math.abs(pe.y-sy)<r+14){ e2.alive=false; if(hitShip("Speronato da una sveglia: festa finita!")) return; } }
@@ -2229,7 +2239,7 @@ a.arcade-btn{text-decoration:none;display:inline-block}
     var gr=cx.createLinearGradient(0,0,0,H); gr.addColorStop(0,"#071a12"); gr.addColorStop(1,"#14532d"); cx.fillStyle=gr; cx.fillRect(0,0,W,H);
     if(bg){ cx.globalAlpha=0.35; cx.drawImage(bg,0,0,W,H); cx.globalAlpha=1; }
     // scritta del bar sul tavolo
-    cx.save(); cx.globalAlpha=0.18; cx.fillStyle="#a3e635"; cx.font=Math.round(W*0.09)+"px 'Press Start 2P', monospace"; cx.textAlign="center"; cx.textBaseline="middle"; cx.fillText("LE MORE",W/2,H*0.5); cx.restore();
+    cx.save(); cx.globalAlpha=0.18; cx.fillStyle="#a3e635"; cx.font=Math.round(W*0.09)+"px 'Press Start 2P', monospace"; cx.textAlign="center"; cx.textBaseline="middle"; cx.fillText("LE FRAGOLE",W/2,H*0.5); cx.restore();
     // corsie decorative
     cx.fillStyle="rgba(163,230,53,.18)"; for(i=0;i<5;i++){ var ay=H*0.42+i*14; cx.beginPath(); cx.moveTo(W/2-10,ay); cx.lineTo(W/2,ay-8); cx.lineTo(W/2+10,ay); cx.fill(); }
     // pareti al neon
@@ -2491,6 +2501,43 @@ a.arcade-btn{text-decoration:none;display:inline-block}
     cx.globalAlpha=1; drawRush(); cx.restore();
   }
 
+  /* ===== COMANDI TOUCH SEMPLICI (livelli 2 e 3) ===== */
+  // livello 2: scorri il dito per correre, tocca per saltare (di nuovo in aria = doppio salto)
+  var PT={id:null, sx:0, sy:0, x:0, y:0, t0:0, moved:false, jt:null};
+  function pfJump(hold){ jumpHeld=false; if(PF) PF.jumpLock=false; jumpHeld=true; clearTimeout(PT.jt); PT.jt=setTimeout(function(){ jumpHeld=false; }, hold*1000); }
+  function ptPos(e){ var r=game.getBoundingClientRect(); return {x:e.clientX-r.left, y:e.clientY-r.top}; }
+  function pfTouchDown(e){
+    var q=ptPos(e);
+    if(PT.id!==null && PT.id!==e.pointerId){ pfJump(0.22); return; }
+    PT.id=e.pointerId; PT.sx=q.x; PT.sy=q.y; PT.x=q.x; PT.y=q.y; PT.t0=performance.now(); PT.moved=false;
+    try{ game.setPointerCapture(e.pointerId); }catch(er){}
+  }
+  function pfTouchMove(e){
+    if(e.pointerId!==PT.id) return; var q=ptPos(e); PT.x=q.x; PT.y=q.y;
+    var dx=q.x-PT.sx, dy=q.y-PT.sy;
+    if(Math.abs(dx)>14){ me.dir = dx>0 ? 1 : -1; PT.moved=true; } else if(PT.moved && Math.abs(dx)<6) me.dir=0;
+    if(dx>60) PT.sx=q.x-60; if(dx<-60) PT.sx=q.x+60;
+    if(dy<-45){ pfJump(0.26); PT.sy=q.y; PT.moved=true; }
+  }
+  function pfTouchUp(e){
+    if(e.pointerId!==PT.id) return;
+    var dur=performance.now()-PT.t0;
+    if(!PT.moved && dur<260 && Math.hypot(PT.x-PT.sx,PT.y-PT.sy)<16) pfJump(0.2);
+    me.dir=0; PT.id=null;
+  }
+  function drawTouchPad(){
+    if(PT.id===null) return;
+    var dx=Math.max(-34,Math.min(34,PT.x-PT.sx)), dy=Math.max(-34,Math.min(34,PT.y-PT.sy));
+    cx.save(); cx.globalAlpha=0.55;
+    cx.strokeStyle="#fde68a"; cx.lineWidth=3; cx.beginPath(); cx.arc(PT.sx,PT.sy,38,0,7); cx.stroke();
+    cx.fillStyle="#fde68a"; cx.font="10px 'Press Start 2P', monospace"; cx.textAlign="center"; cx.textBaseline="middle";
+    cx.fillText("◀",PT.sx-50,PT.sy); cx.fillText("▶",PT.sx+50,PT.sy); cx.fillText("▲",PT.sx,PT.sy-50);
+    cx.globalAlpha=0.9; cx.save(); cx.translate(PT.sx+dx,PT.sy+dy); cx.rotate(dx*0.05); drawCap(0,0,64,true); cx.restore();
+    cx.restore();
+  }
+  // livello 3: tocca dove vuoi andare (puoi anche tenere premuto e trascinare)
+  function bagnoTouch(e){ if(!WC) return; var q=ptPos(e); WC.goal={x:q.x, y:q.y}; WC.mark=0; }
+
   /* ===== LIVELLO 7: RITORNO A CASA IN TAXI ===== */
   var TX = null, ROAD_LEN = 70;
   var CAR_COLS = ["#ef4444","#3b82f6","#22c55e","#a855f7","#f97316","#e5e7eb","#14b8a6"];
@@ -2677,6 +2724,8 @@ a.arcade-btn{text-decoration:none;display:inline-block}
     if(state==="unlock"){ if(UNL && UNL.t>1.5) finishUnlock(); return; }
     if(state!=="play" || e.target.closest("button")) return;
     if(isStack()){ dropCrate(); return; }
+    if(isPlatform()){ pfTouchDown(e); return; }
+    if(isBagno()){ bagnoTouch(e); return; }
     if(isPinball()){ pbDown(e); return; }
     if(isSling()){ slDown(e); return; }
     if(isWhack()){ var rw=game.getBoundingClientRect(); wkTap(e.clientX-rw.left, e.clientY-rw.top); return; }
@@ -2687,8 +2736,8 @@ a.arcade-btn{text-decoration:none;display:inline-block}
     }
     setTarget(e);
   });
-  ["pointerup","pointercancel","pointerleave"].forEach(function(ev){ game.addEventListener(ev,function(e){ if(isBarista()) stopFill(); if(isPinball()) pbUp(e); if(isSling() && ev!=="pointerleave") slUp(); }); });
-  game.addEventListener("pointermove",function(e){ if(state==="play" && isSling()){ slMove(e); return; } if(state==="play" && !e.target.closest("button") && (e.pointerType==="mouse" || e.buttons)) setTarget(e); });
+  ["pointerup","pointercancel","pointerleave"].forEach(function(ev){ game.addEventListener(ev,function(e){ if(isBarista()) stopFill(); if(isPinball()) pbUp(e); if(isPlatform() && ev!=="pointerleave") pfTouchUp(e); if(isSling() && ev!=="pointerleave") slUp(); }); });
+  game.addEventListener("pointermove",function(e){ if(state==="play" && isSling()){ slMove(e); return; } if(state==="play" && isPlatform()){ pfTouchMove(e); return; } if(state==="play" && isBagno() && e.buttons){ bagnoTouch(e); return; } if(state==="play" && !e.target.closest("button") && (e.pointerType==="mouse" || e.buttons)) setTarget(e); });
   window.addEventListener("keydown",function(e){
     if(state==="play" && isPinball() && PB){ if(e.key==="ArrowLeft"||e.key==="z"){ PB.keyL=true; pbSetPtr(); e.preventDefault(); return; } if(e.key==="ArrowRight"||e.key==="m"){ PB.keyR=true; pbSetPtr(); e.preventDefault(); return; } }
     if(state==="unlock"){ if((e.key===" "||e.key==="Enter") && UNL && UNL.t>1.5){ e.preventDefault(); finishUnlock(); } return; }
