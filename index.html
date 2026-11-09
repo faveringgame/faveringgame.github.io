@@ -71,6 +71,7 @@ h2.red{color:#f43f5e}
 .lvsel{display:flex;flex-wrap:wrap;justify-content:center;gap:6px;margin:16px 0 0;max-width:22rem}
 .lvsel .lbl{width:100%;font-size:.55rem;color:#94a3b8;margin-bottom:4px}
 .lvsel button{font-family:"Press Start 2P","Courier New",monospace;font-size:.62rem;padding:9px 10px;border-radius:8px;background:#1e293b;color:#fbbf24;border:2px solid rgba(245,158,11,.4);cursor:pointer}
+.lvsel button:disabled{opacity:.35;cursor:default}
 .lvsel button:focus-visible{outline:3px solid #38bdf8;outline-offset:2px}
 @media (prefers-reduced-motion: reduce){.avatar{animation:none}}
 </style>
@@ -130,6 +131,9 @@ h2.red{color:#f43f5e}
     {n:"Piccola Sabry Bar",        w1:"#331a12", w2:"#9a4a2a", c:"#4a2c17", f:"#21130a", l:["#f97316","#fde047"]}
   ];
   var PTS_PER_LEVEL = 15, TAXI_LEVEL = 7, ptsInLevel = 0;
+  // livelli già pronti: gli altri bar arrivano uno alla volta
+  var READY = [1, 7];
+  function nextLevel(l){ for(var n=l+1;n<=TAXI_LEVEL;n++) if(READY.indexOf(n)>=0) return n; return TAXI_LEVEL; }
   function isTaxi(){ return level===TAXI_LEVEL; }
 
   var cv = document.getElementById("c"), cx = cv.getContext("2d");
@@ -341,7 +345,7 @@ h2.red{color:#f43f5e}
     }
     ptsInLevel += it.pts;
     if(ptsInLevel>=PTS_PER_LEVEL && level<TAXI_LEVEL){
-      ptsInLevel=0; level++; drunk=Math.max(0,drunk-0.2);
+      ptsInLevel=0; level=nextLevel(level); drunk=Math.max(0,drunk-0.2);
       if(isTaxi()) startTaxi(); else buildBg();
       showBanner(); beep(1047,0.2);
     }
@@ -754,6 +758,7 @@ h2.red{color:#f43f5e}
     var box=document.getElementById("lvsel");
     for(var n=1;n<=TAXI_LEVEL;n++){ (function(n){ var b=document.createElement("button"); b.textContent = n===TAXI_LEVEL ? "🚕 "+n : String(n);
       b.setAttribute("aria-label", n===TAXI_LEVEL ? "Livello 7, ritorno a casa in taxi" : "Livello "+n+", "+BARS[n-1].n);
+      if(READY.indexOf(n)<0){ b.disabled=true; b.textContent="🔒"; b.setAttribute("aria-label","Livello "+n+" in arrivo"); }
       b.onclick=function(){ start(n); }; box.appendChild(b); })(n); }
   })();
   document.getElementById("again").onclick=function(){ start(1); };
