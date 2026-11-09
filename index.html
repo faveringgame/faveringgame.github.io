@@ -73,6 +73,10 @@ h2.red{color:#f43f5e}
 .lvsel button{font-family:"Press Start 2P","Courier New",monospace;font-size:.62rem;padding:9px 10px;border-radius:8px;background:#1e293b;color:#fbbf24;border:2px solid rgba(245,158,11,.4);cursor:pointer}
 .lvsel button:disabled{opacity:.35;cursor:default}
 .lvsel button:focus-visible{outline:3px solid #38bdf8;outline-offset:2px}
+#dpad{position:absolute;left:12px;bottom:calc(12px + env(safe-area-inset-bottom,0px));width:132px;height:132px;display:none;pointer-events:none}
+#dpad button{position:absolute;width:44px;height:44px;border-radius:12px;border:2px solid rgba(255,255,255,.35);background:rgba(15,23,42,.32);color:rgba(255,255,255,.8);font-size:1rem;pointer-events:auto;touch-action:none;cursor:pointer;padding:0}
+#dpad button.on{background:rgba(245,158,11,.55);border-color:#fbbf24}
+#dpad .u{left:44px;top:0} #dpad .d{left:44px;top:88px} #dpad .l{left:0;top:44px} #dpad .r{left:88px;top:44px}
 @media (prefers-reduced-motion: reduce){.avatar{animation:none}}
 </style>
 </head>
@@ -90,6 +94,9 @@ h2.red{color:#f43f5e}
     <button class="icon" id="pause" aria-label="Pausa">⏸</button>
   </div>
 
+  <div id="dpad" aria-label="Frecce di movimento">
+    <button class="u" aria-label="Su">▲</button><button class="l" aria-label="Sinistra">◀</button><button class="r" aria-label="Destra">▶</button><button class="d" aria-label="Giù">▼</button>
+  </div>
   <div id="banner" class="hidden"><div class="box px"><div class="l1" id="b1">LIVELLO 1</div><div class="l2" id="b2">BAR</div></div></div>
 
   <div class="screen" id="start">
@@ -136,6 +143,7 @@ h2.red{color:#f43f5e}
   function nextLevel(l){ for(var n=l+1;n<=TAXI_LEVEL;n++) if(READY.indexOf(n)>=0) return n; return TAXI_LEVEL; }
   function isTaxi(){ return level===TAXI_LEVEL; }
   function enterLevel(){
+    me.dir=0; me.diry=0;
     if(isTaxi()){ startTaxi(); return; }
     buildBg(); items=[];
     if(isShooter()) startShooter();
@@ -299,6 +307,7 @@ h2.red{color:#f43f5e}
     document.getElementById("level").textContent = (isTaxi() && TX) ? "🚕 "+TX.pax+"/3" : "Liv. "+level;
     document.getElementById("drunk").style.width = Math.round(drunk*100)+"%";
     document.querySelector(".meter").style.display = isTaxi() ? "none" : "";
+    document.getElementById("dpad").style.display = (isBagno() && state==="play") ? "block" : "none";
   }
 
   function update(dt){
@@ -870,9 +879,10 @@ h2.red{color:#f43f5e}
   var WC = null;
   function isBagno(){ return level===3; }
   function wcTop(){ return Math.max(H*0.26, 190); }
-  function wcBottom(){ return H*0.86; }
+  function wcBottom(){ return H-170; }
   function startBagno(){
-    WC={trip:0, bx:W/2, by:wcBottom()-20, px:W/2, py:wcBottom()-20, inv:0, bar:24, barMax:24, tables:[], baristas:[], waters:[], hint:4, lurch:0, lurchT:2};
+    WC={trip:0, bx:W/2, by:wcBottom()-20, px:W/2, py:wcBottom()-20, inv:0, bar:24, barMax:24, tables:[], baristas:[], waters:[], hint:4, lurch:0, lurchT:2, chasers:[], stuck:0, stuckType:""};
+    me.dir=0; me.diry=0;
     me.target=null; me.ty=null; layoutBagno();
   }
   function layoutBagno(){
@@ -888,6 +898,9 @@ h2.red{color:#f43f5e}
       WC.tables.push({x:tx, y:ty, r:R, shot:Math.random()<0.6});
     }
     WC.waters.push({x:W*(0.15+Math.random()*0.7), y:(laneY(0)+laneY(1))/2+R*1.6});
+    WC.chasers=[spawnChaser("offro"), spawnChaser("girl")];
+    if(WC.trip>=2) WC.chasers.push(spawnChaser("offro"));
+    if(WC.trip>=3) WC.chasers.push(spawnChaser("girl"));
     WC.bar=WC.barMax=Math.max(14, 24-WC.trip*2);
   }
   function resetWalk(){ WC.bx=W/2; WC.by=wcBottom()-20; me.target=null; me.ty=null; }
@@ -898,9 +911,10 @@ h2.red{color:#f43f5e}
     if(WC.inv>0) WC.inv-=dt;
     // affaticato e dondolante: lento, ondeggia e ogni tanto barcolla
     var spd=W*0.30*(1-0.45*drunk);
-    var tx=WC.bx, ty=WC.by;
-    if(me.target!==null && me.ty!=null){ tx=me.target; ty=me.ty; }
-    if(me.dir) tx=WC.bx+me.dir*100; if(me.diry) ty=WC.by+me.diry*100;
+    // movimento con le frecce sullo schermo (o da tastiera)
+    if(WC.stuck>0) WC.stuck-=dt;
+    var tx=WC.bx+(me.dir||0)*100, ty=WC.by+(me.diry||0)*100;
+    if(WC.stuck>0){ tx=WC.bx; ty=WC.by; }
     var dx=tx-WC.bx, dy=ty-WC.by, d=Math.hypot(dx,dy);
     if(d>2){ var m=Math.min(d,spd*dt); WC.bx+=dx/d*m; WC.by+=dy/d*m; }
     WC.lurchT-=dt; if(WC.lurchT<=0){ WC.lurch=0.5; WC.lurchT=1.6+Math.random()*2.4; WC.ldx=(Math.random()-.5)*2; WC.ldy=(Math.random()-.5)*1.2; }
@@ -928,6 +942,7 @@ h2.red{color:#f43f5e}
         if(lives<=0){ gameOver("Travolto dalle bariste: il bagno resta un miraggio!"); return; }
         WC.by=Math.min(wcBottom(), WC.by+70); me.target=null; me.ty=null;
       } }
+    if(!updateChasers(dt)) return;
     // la vescica non aspetta
     WC.bar-=dt*fast;
     if(WC.bar<=0){ lives--; me.hurt=0.8; pops.push({x:W/2,y:H*0.5,txt:"Troppo tardi!",life:1.4,big:true}); beep(120,0.4,"sawtooth",0.08); vibrate(150);
@@ -943,6 +958,63 @@ h2.red{color:#f43f5e}
     for(i=pops.length-1;i>=0;i--){ pops[i].life-=dt; pops[i].y-=40*dt; if(pops[i].life<=0) pops.splice(i,1); }
     for(i=puffs.length-1;i>=0;i--){ var q=puffs[i]; q.life-=dt; q.x+=q.vx*dt; q.y+=q.vy*dt; q.vx*=0.94; q.vy*=0.94; if(q.life<=0) puffs.splice(i,1); }
     if(ptsInLevel>=PTS_PER_LEVEL){ ptsInLevel=0; level=nextLevel(level); drunk=Math.max(0,drunk-0.2); WC=null; enterLevel(); showBanner(); beep(1047,0.2); }
+  }
+  // persone che vogliono offrirti da bere e ragazze che ti fermano a chiacchierare
+  function spawnChaser(type){
+    var side=Math.random()<.5?-1:1;
+    return {type:type, x: side<0 ? -20 : W+20, y: wcTop()+60+Math.random()*(wcBottom()-wcTop()-140), away:0, ph:Math.random()*6, step:0,
+            col: type==="girl" ? pick(["#ec4899","#14b8a6","#a855f7","#ef4444"]) : pick(SHIRTS), hair: pick(HAIRS)};
+  }
+  function updateChasers(dt){
+    for(var i=0;i<WC.chasers.length;i++){
+      var ch=WC.chasers[i];
+      if(ch.away>0){ ch.away-=dt; if(ch.away<=0){ var n=spawnChaser(ch.type); WC.chasers[i]=n; } continue; }
+      var dx=WC.px-ch.x, dy=WC.py-ch.y, d=Math.hypot(dx,dy)||1;
+      var v=W*(0.085+0.015*WC.trip)*(ch.type==="girl"?1.1:1);
+      ch.x+=dx/d*v*dt+Math.sin(t*3+ch.ph)*22*dt; ch.y+=dy/d*v*dt; ch.step+=dt*8; ch.near=d<140;
+      if(d<30 && WC.stuck<=0 && WC.inv<=0){
+        ch.away=4+Math.random()*2.5; ch.x=-200;
+        if(ch.type==="offro"){
+          WC.stuck=1.3; WC.stuckType="offro"; score+=1; ptsInLevel+=1; drunk=Math.min(1,drunk+0.15); me.drink={k:"amaro",t:0,dur:0.6};
+          pops.push({x:WC.px,y:WC.py-60,txt:"Offro io! Glu glu +1",life:1.2}); beep(180,0.07,"sine",0.12); setTimeout(function(){beep(150,0.07,"sine",0.12);},170);
+          drinks++; if(drinks % DRINKS_FOR_RUSH === 0) startRush();
+          if(drunk>=1){ lives--; me.hurt=0.8; drunk=0.45; pops.push({x:W/2,y:H*0.5,txt:"Troppo! Ti siedi un attimo",life:1.6,big:true}); vibrate(150);
+            if(lives<=0){ gameOver("Troppi brindisi offerti: il bagno può aspettare!"); return false; } }
+        } else {
+          WC.stuck=1.7; WC.stuckType="girl"; pops.push({x:WC.px,y:WC.py-60,txt:"Ci balli?",life:1.4});
+          [660,880,660].forEach(function(n,j){ setTimeout(function(){ beep(n,0.07,"triangle",0.05); }, j*110); });
+        }
+      }
+    }
+    return true;
+  }
+  function drawChaser(ch){
+    if(ch.away>0) return;
+    var u=3, x=ch.x, y=ch.y, leg=Math.sin(ch.step)*u;
+    cx.fillStyle="rgba(0,0,0,.25)"; cx.beginPath(); cx.ellipse(x,y+8*u,6*u,2*u,0,0,7); cx.fill();
+    if(ch.type==="girl"){
+      cx.fillStyle="#f1c27d"; cx.fillRect(x-2*u,y+3*u,u*1.4,5*u+leg); cx.fillRect(x+0.6*u,y+3*u,u*1.4,5*u-leg);
+      cx.fillStyle=ch.col; cx.fillRect(x-3*u,y-5*u,6*u,5*u); cx.beginPath(); cx.moveTo(x-3*u,y); cx.lineTo(x-5*u,y+4*u); cx.lineTo(x+5*u,y+4*u); cx.lineTo(x+3*u,y); cx.fill();
+      cx.fillStyle=ch.hair; cx.fillRect(x-4*u,y-12*u,8*u,9*u);
+      cx.fillStyle="#f1c27d"; cx.fillRect(x-3*u,y-11*u,6*u,6*u);
+      cx.fillStyle=ch.hair; cx.fillRect(x-3*u,y-12*u,6*u,2*u);
+      cx.fillStyle="#111"; cx.fillRect(x-2*u,y-9*u,u,u); cx.fillRect(x+u,y-9*u,u,u);
+      cx.fillStyle="#e11d48"; cx.fillRect(x-u,y-7*u,2*u,u*0.8);
+    } else {
+      cx.fillStyle="#1f2937"; cx.fillRect(x-2*u,y+3*u,u*1.5,5*u+leg); cx.fillRect(x+0.5*u,y+3*u,u*1.5,5*u-leg);
+      cx.fillStyle=ch.col; cx.fillRect(x-4*u,y-5*u,8*u,9*u);
+      cx.fillStyle="#e0ac69"; cx.fillRect(x-3*u,y-11*u,6*u,6*u);
+      cx.fillStyle=ch.hair; cx.fillRect(x-3*u,y-12*u,6*u,2*u);
+      cx.fillStyle="#111"; cx.fillRect(x-2*u,y-9*u,u,u); cx.fillRect(x+u,y-9*u,u,u); cx.fillRect(x-u,y-7*u,3*u,u*0.8);
+      var ay=y-12*u+Math.round(Math.sin(t*8))*u; cx.fillStyle=ch.col; cx.fillRect(x+4*u,ay+2*u,u*1.4,6*u);
+      cx.fillStyle="#5b1a0c"; cx.fillRect(x+3.6*u,ay-u,2.4*u,3*u); cx.fillStyle="#c9a646"; cx.fillRect(x+3.6*u,ay-u,2.4*u,u*0.7);
+    }
+    if(ch.near){
+      var txt = ch.type==="girl" ? "CI BALLI?" : "OFFRO IO!";
+      cx.font="7px 'Press Start 2P', monospace"; var tw=cx.measureText(txt).width+10;
+      cx.fillStyle="#fff"; cx.fillRect(x-tw/2,y-19*u-12,tw,14); cx.fillRect(x-u,y-19*u+2,2*u,u);
+      cx.fillStyle = ch.type==="girl" ? "#db2777" : "#0f172a"; cx.textAlign="center"; cx.textBaseline="middle"; cx.fillText(txt,x,y-19*u-5);
+    }
   }
   function drawBarista2(b){
     var u=3, x=b.x, y=b.y, leg=Math.sin(b.step)*u;
@@ -984,8 +1056,8 @@ h2.red{color:#f43f5e}
     // acqua
     for(i=0;i<WC.waters.length;i++) drawItem({k:"water",x:WC.waters[i].x,y:WC.waters[i].y,r:14,rot:0});
     // bariste (dall'alto verso il basso per la profondità)
-    var bs=WC.baristas.slice().sort(function(a,b){return a.y-b.y;});
-    for(i=0;i<bs.length;i++) drawBarista2(bs[i]);
+    var bs=WC.baristas.map(function(b){return {b:b,y:b.y,k:0};}).concat(WC.chasers.map(function(c){return {b:c,y:c.y,k:1};})).sort(function(a,b){return a.y-b.y;});
+    for(i=0;i<bs.length;i++){ if(bs[i].k) drawChaser(bs[i].b); else drawBarista2(bs[i].b); }
     // io, affaticato
     if(frames && !(WC.inv>0 && Math.floor(t*12)%2)){
       var hx=WC.px, hy=WC.py, s=Math.max(0.8,Math.min(W/390,1.2)), fh=46*s, fw=28*s;
@@ -997,13 +1069,15 @@ h2.red{color:#f43f5e}
       cx.fillStyle="#7dd3fc"; var dy=(t*40)%16; cx.fillRect(fw*0.55,-fh*0.8+dy,3,5); cx.fillRect(-fw*0.7,-fh*0.6+((dy+8)%16),3,5);
       cx.restore();
     }
+    if(WC.stuck>0 && WC.stuckType==="girl"){ for(var hh=0;hh<3;hh++){ var hy2=WC.py-60-((t*40+hh*18)%50), hx2=WC.px-20+hh*20;
+      cx.fillStyle="#f472b6"; cx.fillRect(hx2-4,hy2,4,4); cx.fillRect(hx2+2,hy2,4,4); cx.fillRect(hx2-5,hy2+3,12,4); cx.fillRect(hx2-3,hy2+7,8,3); cx.fillRect(hx2-1,hy2+10,4,2); } }
     // barra "SCAPPA!"
-    var bw=Math.min(W*0.6,240), bx=W/2-bw/2, by=H-34, pr=Math.max(0,WC.bar/WC.barMax);
+    var bx=156, bw=Math.max(90,W-bx-16), by=H-34, pr=Math.max(0,WC.bar/WC.barMax);
     cx.fillStyle="rgba(15,23,42,.85)"; cx.fillRect(bx-4,by-16,bw+8,30);
     cx.fillStyle="#334155"; cx.fillRect(bx,by,bw,10); cx.fillStyle = pr>0.5 ? "#4ade80" : (pr>0.25 ? "#facc15" : "#ef4444"); cx.fillRect(bx,by,bw*pr,10);
-    cx.font="8px 'Press Start 2P', monospace"; cx.textAlign="center"; cx.textBaseline="bottom"; cx.fillStyle = pr<0.25 && Math.floor(t*6)%2 ? "#ef4444" : "#fff"; cx.fillText("SCAPPA!",W/2,by-3);
-    if(WC.hint>0){ var msg="TRASCINA IL DITO FINO AL BAGNO"; cx.font="8px 'Press Start 2P', monospace"; var tw=cx.measureText(msg).width+16;
-      cx.fillStyle="rgba(15,23,42,.8)"; cx.fillRect(W/2-tw/2,H-74,tw,20); cx.fillStyle="#fde68a"; cx.textBaseline="middle"; cx.fillText(msg,W/2,H-64); }
+    cx.font="8px 'Press Start 2P', monospace"; cx.textAlign="center"; cx.textBaseline="bottom"; cx.fillStyle = pr<0.25 && Math.floor(t*6)%2 ? "#ef4444" : "#fff"; cx.fillText("SCAPPA!",bx+bw/2,by-3);
+    if(WC.hint>0){ var msg="USA LE FRECCE: CORRI IN BAGNO!"; cx.font="8px 'Press Start 2P', monospace"; var tw=cx.measureText(msg).width+16;
+      cx.fillStyle="rgba(15,23,42,.8)"; cx.fillRect(W/2-tw/2,H-176,tw,20); cx.fillStyle="#fde68a"; cx.textBaseline="middle"; cx.fillText(msg,W/2,H-166); }
     drawRush();
     cx.textAlign="center"; cx.textBaseline="alphabetic";
     for(i=0;i<pops.length;i++){ var p=pops[i]; cx.globalAlpha=Math.min(1,p.life*2);
@@ -1216,6 +1290,12 @@ h2.red{color:#f43f5e}
     else if(e.key==="p"||e.key==="Escape"){ state==="play"?pause():resume(); }
   });
   window.addEventListener("keyup",function(e){ if(e.key===" " && isBarista()) stopFill(); if((e.key==="ArrowLeft"&&me.dir<0)||(e.key==="ArrowRight"&&me.dir>0)) me.dir=0; if(e.key==="ArrowUp"||e.key==="ArrowDown") me.diry=0; });
+  [["u",0,-1],["d",0,1],["l",-1,0],["r",1,0]].forEach(function(a){
+    var b=document.querySelector("#dpad ."+a[0]);
+    var on=function(e){ e.preventDefault(); if(a[1]) me.dir=a[1]; if(a[2]) me.diry=a[2]; b.classList.add("on"); };
+    var off=function(){ if(a[1] && me.dir===a[1]) me.dir=0; if(a[2] && me.diry===a[2]) me.diry=0; b.classList.remove("on"); };
+    b.addEventListener("pointerdown",on); ["pointerup","pointercancel","pointerleave"].forEach(function(ev){ b.addEventListener(ev,off); });
+  });
   document.getElementById("play").onclick=function(){ start(1); };
   (function(){
     var box=document.getElementById("lvsel");
