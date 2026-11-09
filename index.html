@@ -156,9 +156,9 @@ a.arcade-btn{text-decoration:none;display:inline-block}
       <p><b>Android (Chrome):</b> menu ⋮ in alto a destra → <b>Installa app</b> (o “Aggiungi a schermata Home”).</p>
       <p><b>iPhone (Safari):</b> tasto Condividi → <b>Aggiungi alla schermata Home</b>.</p>
     </div>
-    <a class="arcade-btn" id="apkBtn" href="https://ruccyo13.github.io/favering.apk" download="favering.apk" style="background:linear-gradient(#22c55e,#16a34a);border-color:#15803d;box-shadow:0 6px 0 #14532d,0 10px 12px rgba(0,0,0,.5);margin-bottom:12px">⤓ APP ANDROID (APK)</a>
+    <a class="arcade-btn" id="apkBtn" href="https://faveringgame.github.io/favering.apk" download="favering.apk" style="background:linear-gradient(#22c55e,#16a34a);border-color:#15803d;box-shadow:0 6px 0 #14532d,0 10px 12px rgba(0,0,0,.5);margin-bottom:12px">⤓ APP ANDROID (APK)</a>
     <p id="apkNote" style="font-size:.9rem;margin:0 0 14px">Dopo il download apri il file dalle notifiche e tocca <b>Installa</b>. Se il telefono chiede di consentire le app da questa fonte, conferma.</p>
-    <a class="arcade-btn" id="openSite" href="https://ruccyo13.github.io/" target="_blank" rel="noopener">APRI IL SITO DEL GIOCO</a>
+    <a class="arcade-btn" id="openSite" href="https://faveringgame.github.io/" target="_blank" rel="noopener">APRI IL SITO DEL GIOCO</a>
     <button class="dl px" id="instBack" style="margin-top:18px">INDIETRO</button>
   </div>
 
@@ -3174,7 +3174,7 @@ a.arcade-btn{text-decoration:none;display:inline-block}
   (function(){ var b=document.getElementById("install");
     var standalone = (window.matchMedia && window.matchMedia("(display-mode: standalone)").matches) || window.navigator.standalone;
     if(standalone) b.style.display="none";
-    if(location.hostname==="ruccyo13.github.io") document.getElementById("openSite").style.display="none";
+    if(location.hostname==="faveringgame.github.io") document.getElementById("openSite").style.display="none";
     if(!/android/i.test(navigator.userAgent)){ document.getElementById("apkBtn").style.display="none"; document.getElementById("apkNote").style.display="none"; }
     b.onclick=function(){ if(installEvt){ installEvt.prompt(); installEvt.userChoice.then(function(){ installEvt=null; }); return; } show("installInfo"); };
     document.getElementById("instBack").onclick=function(){ show("start"); };
