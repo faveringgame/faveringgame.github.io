@@ -111,6 +111,7 @@ a.arcade-btn{text-decoration:none;display:inline-block}
   <div id="dpad" aria-label="Frecce di movimento">
     <button class="u" aria-label="Su">▲</button><button class="l" aria-label="Sinistra">◀</button><button class="r" aria-label="Destra">▶</button><button class="d" aria-label="Giù">▼</button>
   </div>
+  <button id="pzBack" class="dl px" style="display:none;position:absolute;top:calc(10px + env(safe-area-inset-top,0px));left:10px;margin:0;z-index:5">← HOME</button>
   <div id="banner" class="hidden"><div class="box px"><div class="l1" id="b1">LIVELLO 1</div><div class="l2" id="b2">BAR</div></div></div>
 
   <div class="screen" id="start">
@@ -122,6 +123,7 @@ a.arcade-btn{text-decoration:none;display:inline-block}
     <div class="legend"><span>🍺 birra +1</span><span>🥃 amaro +2</span><span>🏆 boccale d’oro +5</span><span>💧 acqua, ti riprendi</span></div>
     <button class="arcade-btn" id="play">GIOCA ORA</button>
     <div class="lvsel px" id="lvsel"><div class="lbl">OPPURE PARTI DAL LIVELLO</div></div>
+    <button class="dl px" id="puzzle" style="color:#fbbf24;border-color:rgba(251,191,36,.6)">🍻 PASSATEMPO: GIRO DI BICCHIERI</button>
     <button class="dl px" id="install">📲 SCARICA L’APP</button>
   </div>
 
@@ -2538,6 +2540,172 @@ a.arcade-btn{text-decoration:none;display:inline-block}
   // livello 3: tocca dove vuoi andare (puoi anche tenere premuto e trascinare)
   function bagnoTouch(e){ if(!WC) return; var q=ptPos(e); WC.goal={x:q.x, y:q.y}; WC.mark=0; }
 
+  /* ===== PASSATEMPO: GIRO DI BICCHIERI (allinea 3 uguali) ===== */
+  var PZ=null, PZC=7, PZR=8, PZTYPES=["bottle","mug","amaro","water","coffee","cap"];
+  var PZCOL={bottle:"#7c2d12", mug:"#92400e", amaro:"#4c1d95", water:"#0e7490", coffee:"#3f6212", cap:"#9f1239", keg:"#334155"};
+  var pzBest=0; try{ pzBest=parseInt(localStorage.getItem("favering-giro-best")||"0",10)||0; }catch(e){}
+  function pzGeo(){ var cs=Math.floor(Math.min((W-24)/PZC, (H-250)/PZR)); return {cs:cs, ox:Math.round((W-cs*PZC)/2), oy:Math.round(Math.max(130,(H-cs*PZR)/2+30))}; }
+  function pzRand(){ return PZTYPES[Math.floor(Math.random()*PZTYPES.length)]; }
+  function startPuzzle(){
+    PZ={g:[], score:0, giro:1, target:600, phase:"idle", t:0, sel:null, swap:null, combo:0, idle:0, hint:null, down:null, msg:null, conf:[]};
+    for(var r=0;r<PZR;r++){ PZ.g.push([]); for(var c=0;c<PZC;c++){ var tp; do{ tp=pzRand(); } while((c>=2 && PZ.g[r][c-1].t===tp && PZ.g[r][c-2].t===tp) || (r>=2 && PZ.g[r-1][c].t===tp && PZ.g[r-2][c].t===tp)); PZ.g[r].push({t:tp, sp:null, oy:0, kill:0}); } }
+    if(!pzFindMove()) pzShuffle();
+  }
+  function enterPuzzle(){
+    show(null); state="puzzle"; document.querySelector(".hud").style.display="none"; document.getElementById("pzBack").style.display="block";
+    startPuzzle(); playMusic("menu"); last=performance.now(); requestAnimationFrame(puzzleLoop);
+    beep(523,0.08); setTimeout(function(){ beep(784,0.1); },90);
+  }
+  function exitPuzzle(){ state="start"; document.querySelector(".hud").style.display=""; document.getElementById("pzBack").style.display="none"; PZ=null; show("start"); }
+  function pzMatches(){
+    var g=PZ.g, set={}, runs=[], r, c, k;
+    function same(a,b){ return a && b && a.t!=="keg" && a.t===b.t; }
+    for(r=0;r<PZR;r++){ c=0; while(c<PZC){ k=c+1; while(k<PZC && same(g[r][c],g[r][k])) k++; if(k-c>=3){ var cells=[]; for(var i=c;i<k;i++){ set[r+","+i]=1; cells.push([r,i]); } runs.push(cells); } c=k; } }
+    for(c=0;c<PZC;c++){ r=0; while(r<PZR){ k=r+1; while(k<PZR && same(g[r][c],g[k][c])) k++; if(k-r>=3){ var cells2=[]; for(var j=r;j<k;j++){ set[j+","+c]=1; cells2.push([j,c]); } runs.push(cells2); } r=k; } }
+    return {set:set, runs:runs, n:Object.keys(set).length};
+  }
+  function pzSwapCells(a,b){ var g=PZ.g, tmp=g[a[0]][a[1]]; g[a[0]][a[1]]=g[b[0]][b[1]]; g[b[0]][b[1]]=tmp; }
+  function pzFindMove(){
+    for(var r=0;r<PZR;r++) for(var c=0;c<PZC;c++){
+      if(PZ.g[r][c].t==="keg") return [[r,c],[r,c<PZC-1?c+1:c-1]];
+      var ds=[[0,1],[1,0]];
+      for(var d=0;d<2;d++){ var r2=r+ds[d][0], c2=c+ds[d][1]; if(r2>=PZR||c2>=PZC) continue; pzSwapCells([r,c],[r2,c2]); var m=pzMatches(); pzSwapCells([r,c],[r2,c2]); if(m.n) return [[r,c],[r2,c2]]; } }
+    return null;
+  }
+  function pzShuffle(){
+    var all=[]; PZ.g.forEach(function(row){ row.forEach(function(x){ if(x.t!=="keg") all.push(x.t); }); });
+    var tries=0; do{ for(var r=0;r<PZR;r++) for(var c=0;c<PZC;c++) PZ.g[r][c]={t:pzRand(),sp:null,oy:-PZR*20,kill:0}; tries++; } while((pzMatches().n || !pzFindMove()) && tries<50);
+    PZ.phase="fall"; PZ.msg={txt:"Rimescolo i bicchieri!",t:1.4};
+  }
+  function pzTry(a,b){
+    if(PZ.phase!=="idle") return;
+    if(Math.abs(a[0]-b[0])+Math.abs(a[1]-b[1])!==1) return;
+    PZ.idle=0; PZ.hint=null; PZ.combo=0; PZ.sel=null;
+    PZ.swap={a:a,b:b,t:0,back:false}; PZ.phase="swap"; beep(440,0.04,"square",0.04);
+  }
+  function pzClear(m, swapCell){
+    var g=PZ.g, toClear={}, made=null;
+    Object.keys(m.set).forEach(function(k){ toClear[k]=1; });
+    // bicchieri speciali: 4 in fila = boccale d'oro (svuota la riga), 5 = fusto (jolly)
+    m.runs.forEach(function(run){ if(run.length>=4){ var keep=run[0];
+      if(swapCell) run.forEach(function(cc){ if(cc[0]===swapCell[0]&&cc[1]===swapCell[1]) keep=cc; });
+      made={r:keep[0], c:keep[1], sp: run.length>=5 ? "keg" : "gold", t:g[keep[0]][keep[1]].t}; } });
+    Object.keys(toClear).forEach(function(k){ var p=k.split(","), r=+p[0], c=+p[1], x=g[r][c];
+      if(x && x.sp==="gold"){ for(var cc=0;cc<PZC;cc++) toClear[r+","+cc]=1; PZ.msg={txt:"Boccale d'oro: giro offerto!",t:1.2}; } });
+    if(made){ delete toClear[made.r+","+made.c]; }
+    var n=0; Object.keys(toClear).forEach(function(k){ var p=k.split(","), r=+p[0], c=+p[1]; if(g[r][c]){ g[r][c].kill=0.001; n++; } });
+    if(made){ var x2=g[made.r][made.c]; x2.sp=made.sp; if(made.sp==="keg") x2.t="keg"; x2.kill=0; }
+    PZ.combo++;
+    var pts=n*10*PZ.combo; PZ.score+=pts;
+    var gg=pzGeo(); pops.push({x:W/2,y:gg.oy-14,txt:"+"+pts+(PZ.combo>1?"  x"+PZ.combo:""),life:0.9});
+    if(PZ.combo===3) PZ.msg={txt:"Ancora una, dai!",t:1.2}; else if(PZ.combo===4) PZ.msg={txt:"Che giro!",t:1.2}; else if(PZ.combo>=5) PZ.msg={txt:"FAVEROOOOO!",t:1.4};
+    beep(500+PZ.combo*90,0.07,"square",0.05); if(made) setTimeout(function(){ beep(1047,0.1,"square",0.06); },80);
+    PZ.phase="clear"; PZ.t=0;
+  }
+  function pzKeg(a,b){ // il fusto svuota tutti i bicchieri del tipo scambiato
+    var g=PZ.g, kegCell = g[a[0]][a[1]].t==="keg" ? a : b, other = kegCell===a ? b : a, tp=g[other[0]][other[1]].t, n=0;
+    for(var r=0;r<PZR;r++) for(var c=0;c<PZC;c++){ if(g[r][c].t===tp || (r===kegCell[0]&&c===kegCell[1])){ g[r][c].kill=0.001; n++; } }
+    PZ.combo=1; var pts=n*15; PZ.score+=pts; PZ.msg={txt:"Fusto! Tutti i bicchieri uguali spariscono",t:1.4};
+    pops.push({x:W/2,y:pzGeo().oy-14,txt:"+"+pts,life:1}); beep(200,0.2,"sawtooth",0.06); setTimeout(function(){ beep(1047,0.12,"square",0.06); },120);
+    PZ.phase="clear"; PZ.t=0;
+  }
+  function pzGravity(){
+    var g=PZ.g, gg=pzGeo();
+    for(var c=0;c<PZC;c++){ var col=[]; for(var r=PZR-1;r>=0;r--){ if(!g[r][c].kill) col.push({x:g[r][c], r:r}); }
+      var missing=PZR-col.length;
+      for(var i=0;i<PZR;i++){ var rr=PZR-1-i;
+        if(i<col.length){ var o=col[i]; o.x.oy += (o.r-rr)*gg.cs; g[rr][c]=o.x; }
+        else { var jj=i-col.length; g[rr][c]={t:pzRand(),sp:null,oy:-(jj+1)*gg.cs-rr*gg.cs,kill:0}; } } }
+    PZ.phase="fall";
+  }
+  function updatePuzzle(dt){
+    var g=PZ.g, gg=pzGeo(), r, c;
+    if(PZ.msg){ PZ.msg.t-=dt; if(PZ.msg.t<=0) PZ.msg=null; }
+    PZ.conf.forEach(function(q){ q.x+=q.vx*dt; q.y+=q.vy*dt; q.vy+=300*dt; q.life-=dt; }); PZ.conf=PZ.conf.filter(function(q){ return q.life>0; });
+    if(PZ.phase==="idle"){ PZ.idle+=dt; if(PZ.idle>6 && !PZ.hint) PZ.hint=pzFindMove(); }
+    else if(PZ.phase==="swap"){ var s=PZ.swap; s.t+=dt/0.16;
+      if(s.t>=1){ pzSwapCells(s.a,s.b);
+        if(s.back){ PZ.swap=null; PZ.phase="idle"; }
+        else if(g[s.a[0]][s.a[1]].t==="keg" || g[s.b[0]][s.b[1]].t==="keg"){ PZ.swap=null; pzKeg(s.a,s.b); }
+        else { var m=pzMatches(); if(m.n){ PZ.swap=null; pzClear(m, s.b); } else { PZ.swap={a:s.a,b:s.b,t:0,back:true}; beep(180,0.06,"square",0.04); } } } }
+    else if(PZ.phase==="clear"){ PZ.t+=dt; for(r=0;r<PZR;r++) for(c=0;c<PZC;c++) if(g[r][c].kill) g[r][c].kill+=dt;
+      if(PZ.t>0.22){ for(r=0;r<PZR;r++) for(c=0;c<PZC;c++) if(g[r][c].kill){ for(var k=0;k<3;k++) puffs.push({x:gg.ox+c*gg.cs+gg.cs/2,y:gg.oy+r*gg.cs+gg.cs/2,vx:(Math.random()-.5)*160,vy:(Math.random()-.5)*160,b:2,life:0.35}); }
+        pzGravity(); } }
+    else if(PZ.phase==="fall"){ var moving=false, sp=gg.cs*16*dt;
+      for(r=0;r<PZR;r++) for(c=0;c<PZC;c++){ var x=g[r][c]; if(x.oy<0){ x.oy=Math.min(0,x.oy+sp); moving=true; } else if(x.oy>0){ x.oy=Math.max(0,x.oy-sp); moving=true; } }
+      if(!moving){ var m2=pzMatches(); if(m2.n) pzClear(m2,null); else { PZ.phase="idle"; PZ.idle=0; PZ.combo=0;
+        if(PZ.score>=PZ.target){ PZ.giro++; PZ.target=Math.round(PZ.target*1.6+400); PZ.msg={txt:"GIRO "+PZ.giro+"! Offri tu!",t:1.8};
+          for(var q=0;q<40;q++) PZ.conf.push({x:W/2,y:H*0.4,vx:(Math.random()-.5)*500,vy:-Math.random()*500,life:1.4,c:["#f43f5e","#fbbf24","#22d3ee","#a3e635"][q%4]});
+          [523,659,784,1047].forEach(function(n,j){ setTimeout(function(){ beep(n,0.08,"square",0.06); }, j*80); }); }
+        if(!pzFindMove()) pzShuffle(); } } }
+    if(PZ.score>pzBest){ pzBest=PZ.score; try{ localStorage.setItem("favering-giro-best",String(pzBest)); }catch(e){} }
+    for(var i=pops.length-1;i>=0;i--){ pops[i].life-=dt; pops[i].y-=40*dt; if(pops[i].life<=0) pops.splice(i,1); }
+    for(i=puffs.length-1;i>=0;i--){ var p=puffs[i]; p.life-=dt; p.x+=p.vx*dt; p.y+=p.vy*dt; p.vx*=0.94; p.vy*=0.94; if(p.life<=0) puffs.splice(i,1); }
+  }
+  function pzIcon(x,y,s,tile){
+    var tp=tile.t;
+    if(tp==="bottle") drawItem({k:"bottle",x:x,y:y+s*0.05,r:s*0.36,rot:0});
+    else if(tp==="mug") drawItem({k: tile.sp==="gold" ? "gold" : "mug",x:x-s*0.05,y:y+s*0.04,r:s*0.3,rot:0});
+    else if(tp==="amaro") drawItem({k:"amaro",x:x,y:y+s*0.06,r:s*0.32,rot:0});
+    else if(tp==="water") drawItem({k:"water",x:x,y:y+s*0.04,r:s*0.32,rot:0});
+    else if(tp==="coffee"){ cx.save(); cx.translate(x,y+s*0.04); cx.scale(s/52,s/52); drawCoffee(0,0); cx.restore(); }
+    else if(tp==="cap") drawCap(x,y,s*1.15,true);
+    else if(tp==="keg") drawKeg(x,y,s*0.26);
+    if(tile.sp==="gold" && tp!=="mug"){ cx.strokeStyle="#fde047"; cx.lineWidth=3; cx.beginPath(); cx.arc(x,y,s*0.42,0,7); cx.stroke(); }
+  }
+  function drawPuzzle(){
+    var g=PZ.g, gg=pzGeo(), cs=gg.cs, r, c;
+    cx.clearRect(0,0,W,H);
+    var gr=cx.createLinearGradient(0,0,0,H); gr.addColorStop(0,"#1c0f08"); gr.addColorStop(1,"#3b2112"); cx.fillStyle=gr; cx.fillRect(0,0,W,H);
+    cx.fillStyle="rgba(255,255,255,.03)"; for(var y=0;y<H;y+=26) cx.fillRect(0,y,W,2);
+    // insegna
+    cx.textAlign="center"; cx.textBaseline="middle"; cx.font="13px 'Press Start 2P', monospace"; cx.fillStyle="#fde68a"; cx.shadowColor="#f59e0b"; cx.shadowBlur=12; cx.fillText("GIRO DI BICCHIERI",W/2,Math.max(30,gg.oy-86)); cx.shadowBlur=0;
+    cx.font="8px 'Press Start 2P', monospace"; cx.fillStyle="#e2e8f0";
+    cx.fillText("PUNTI "+PZ.score+"   GIRO "+PZ.giro+"   RECORD "+pzBest, W/2, Math.max(52,gg.oy-62));
+    var pw=W-60, pr2=Math.min(1,PZ.score/PZ.target); cx.fillStyle="#0f172a"; cx.fillRect(30,Math.max(64,gg.oy-48),pw,8); cx.fillStyle="#f59e0b"; cx.fillRect(30,Math.max(64,gg.oy-48),pw*pr2,8);
+    // bancone e sottobicchieri
+    cx.fillStyle="#5c3a1a"; roundRect(gg.ox-10,gg.oy-10,cs*PZC+20,cs*PZR+20,12); cx.fill(); cx.fillStyle="#7a4e2d"; roundRect(gg.ox-6,gg.oy-6,cs*PZC+12,cs*PZR+12,10); cx.fill();
+    for(r=0;r<PZR;r++) for(c=0;c<PZC;c++){ cx.fillStyle=(r+c)%2?"rgba(0,0,0,.12)":"rgba(255,255,255,.04)"; cx.fillRect(gg.ox+c*cs,gg.oy+r*cs,cs,cs); }
+    cx.save(); cx.beginPath(); cx.rect(gg.ox-6,gg.oy-6,cs*PZC+12,cs*PZR+12); cx.clip();
+    for(r=0;r<PZR;r++) for(c=0;c<PZC;c++){
+      var tile=g[r][c], x=gg.ox+c*cs+cs/2, y2=gg.oy+r*cs+cs/2+tile.oy;
+      if(PZ.swap){ var s=PZ.swap, k=Math.min(1,s.t), e=k*k*(3-2*k);
+        if(r===s.a[0]&&c===s.a[1]){ x+= (s.b[1]-s.a[1])*cs*e; y2+=(s.b[0]-s.a[0])*cs*e; }
+        else if(r===s.b[0]&&c===s.b[1]){ x+= (s.a[1]-s.b[1])*cs*e; y2+=(s.a[0]-s.b[0])*cs*e; } }
+      var sc=tile.kill ? Math.max(0,1-tile.kill/0.22) : 1;
+      if(PZ.hint && ((PZ.hint[0][0]===r&&PZ.hint[0][1]===c)||(PZ.hint[1][0]===r&&PZ.hint[1][1]===c))) sc*=1+Math.sin(t*10)*0.08;
+      cx.save(); cx.translate(x,y2); cx.scale(sc,sc);
+      cx.fillStyle=PZCOL[tile.t]||"#334155"; cx.beginPath(); cx.arc(0,0,cs*0.44,0,7); cx.fill();
+      cx.strokeStyle="rgba(255,255,255,.18)"; cx.lineWidth=2; cx.beginPath(); cx.arc(0,0,cs*0.38,0,7); cx.stroke();
+      if(PZ.sel && PZ.sel[0]===r && PZ.sel[1]===c){ cx.strokeStyle="#fde047"; cx.lineWidth=4; cx.beginPath(); cx.arc(0,0,cs*0.46,0,7); cx.stroke(); }
+      pzIcon(0,0,cs,tile); cx.restore();
+    }
+    cx.restore();
+    // coriandoli, scritte
+    PZ.conf.forEach(function(q){ cx.fillStyle=q.c; cx.fillRect(q.x,q.y,4,6); });
+    puffs.forEach(function(p){ cx.globalAlpha=Math.min(1,p.life*2); cx.fillStyle="#fff8ec"; cx.fillRect(p.x-p.b,p.y-p.b,p.b*2,p.b*2); }); cx.globalAlpha=1;
+    if(PZ.msg){ cx.globalAlpha=Math.min(1,PZ.msg.t*2); cx.font="800 24px 'Baloo 2', 'Trebuchet MS', sans-serif"; cx.lineWidth=6; cx.strokeStyle="#0f172a"; cx.textAlign="center"; cx.textBaseline="middle";
+      cx.strokeText(PZ.msg.txt,W/2,gg.oy+cs*PZR/2); cx.fillStyle="#fde68a"; cx.fillText(PZ.msg.txt,W/2,gg.oy+cs*PZR/2); cx.globalAlpha=1; }
+    cx.textAlign="center"; cx.textBaseline="alphabetic";
+    for(var i=0;i<pops.length;i++){ var pp=pops[i]; cx.globalAlpha=Math.min(1,pp.life*2); cx.font="800 20px 'Baloo 2', sans-serif"; cx.lineWidth=5; cx.strokeStyle="#0f172a"; cx.strokeText(pp.txt,pp.x,pp.y); cx.fillStyle="#fde68a"; cx.fillText(pp.txt,pp.x,pp.y); }
+    cx.globalAlpha=1;
+    cx.font="8px 'Press Start 2P', monospace"; cx.fillStyle="rgba(253,230,138,.7)"; cx.textBaseline="middle";
+    cx.fillText("SCORRI UN BICCHIERE PER SCAMBIARLO", W/2, Math.min(H-24, gg.oy+cs*PZR+28));
+  }
+  function puzzleLoop(now){
+    if(state!=="puzzle" || !PZ) return;
+    var dt=Math.min(0.05,(now-last)/1000); last=now; t+=dt;
+    updatePuzzle(dt); drawPuzzle(); requestAnimationFrame(puzzleLoop);
+  }
+  function pzCell(e){ var q=ptPos(e), gg=pzGeo(), c=Math.floor((q.x-gg.ox)/gg.cs), r=Math.floor((q.y-gg.oy)/gg.cs); if(r<0||r>=PZR||c<0||c>=PZC) return null; return [r,c]; }
+  function pzDown(e){ var cl=pzCell(e), q=ptPos(e); PZ.down={cell:cl, x:q.x, y:q.y, done:false}; }
+  function pzMove(e){ var d=PZ && PZ.down; if(!d || !d.cell || d.done) return; var q=ptPos(e), dx=q.x-d.x, dy=q.y-d.y;
+    if(Math.max(Math.abs(dx),Math.abs(dy))>pzGeo().cs*0.35){ d.done=true; var b = Math.abs(dx)>Math.abs(dy) ? [d.cell[0], d.cell[1]+(dx>0?1:-1)] : [d.cell[0]+(dy>0?1:-1), d.cell[1]];
+      if(b[0]>=0&&b[0]<PZR&&b[1]>=0&&b[1]<PZC) pzTry(d.cell,b); } }
+  function pzUp(e){ var d=PZ && PZ.down; if(!d) return; PZ.down=null; if(d.done || !d.cell) return;
+    if(PZ.sel && Math.abs(PZ.sel[0]-d.cell[0])+Math.abs(PZ.sel[1]-d.cell[1])===1){ pzTry(PZ.sel,d.cell); PZ.sel=null; }
+    else { PZ.sel=d.cell; beep(700,0.03,"square",0.03); } }
+
   /* ===== LIVELLO 7: RITORNO A CASA IN TAXI ===== */
   var TX = null, ROAD_LEN = 70;
   var CAR_COLS = ["#ef4444","#3b82f6","#22c55e","#a855f7","#f97316","#e5e7eb","#14b8a6"];
@@ -2721,6 +2889,7 @@ a.arcade-btn{text-decoration:none;display:inline-block}
   /* comandi */
   function setTarget(e){ var r=game.getBoundingClientRect(); me.target=e.clientX-r.left; me.ty=e.clientY-r.top; }
   game.addEventListener("pointerdown",function(e){
+    if(state==="puzzle"){ if(!e.target.closest("button")) pzDown(e); return; }
     if(state==="unlock"){ if(UNL && UNL.t>1.5) finishUnlock(); return; }
     if(state!=="play" || e.target.closest("button")) return;
     if(isStack()){ dropCrate(); return; }
@@ -2736,8 +2905,8 @@ a.arcade-btn{text-decoration:none;display:inline-block}
     }
     setTarget(e);
   });
-  ["pointerup","pointercancel","pointerleave"].forEach(function(ev){ game.addEventListener(ev,function(e){ if(isBarista()) stopFill(); if(isPinball()) pbUp(e); if(isPlatform() && ev!=="pointerleave") pfTouchUp(e); if(isSling() && ev!=="pointerleave") slUp(); }); });
-  game.addEventListener("pointermove",function(e){ if(state==="play" && isSling()){ slMove(e); return; } if(state==="play" && isPlatform()){ pfTouchMove(e); return; } if(state==="play" && isBagno() && e.buttons){ bagnoTouch(e); return; } if(state==="play" && !e.target.closest("button") && (e.pointerType==="mouse" || e.buttons)) setTarget(e); });
+  ["pointerup","pointercancel","pointerleave"].forEach(function(ev){ game.addEventListener(ev,function(e){ if(isBarista()) stopFill(); if(state==="puzzle" && ev!=="pointerleave") pzUp(e); if(isPinball()) pbUp(e); if(isPlatform() && ev!=="pointerleave") pfTouchUp(e); if(isSling() && ev!=="pointerleave") slUp(); }); });
+  game.addEventListener("pointermove",function(e){ if(state==="puzzle"){ pzMove(e); return; } if(state==="play" && isSling()){ slMove(e); return; } if(state==="play" && isPlatform()){ pfTouchMove(e); return; } if(state==="play" && isBagno() && e.buttons){ bagnoTouch(e); return; } if(state==="play" && !e.target.closest("button") && (e.pointerType==="mouse" || e.buttons)) setTarget(e); });
   window.addEventListener("keydown",function(e){
     if(state==="play" && isPinball() && PB){ if(e.key==="ArrowLeft"||e.key==="z"){ PB.keyL=true; pbSetPtr(); e.preventDefault(); return; } if(e.key==="ArrowRight"||e.key==="m"){ PB.keyR=true; pbSetPtr(); e.preventDefault(); return; } }
     if(state==="unlock"){ if((e.key===" "||e.key==="Enter") && UNL && UNL.t>1.5){ e.preventDefault(); finishUnlock(); } return; }
@@ -2801,6 +2970,8 @@ a.arcade-btn{text-decoration:none;display:inline-block}
     document.getElementById("instBack").onclick=function(){ show("start"); };
     window.addEventListener("appinstalled",function(){ b.style.display="none"; });
   })();
+  document.getElementById("puzzle").onclick=enterPuzzle;
+  document.getElementById("pzBack").onclick=function(){ exitPuzzle(); playMusic("menu"); };
   document.getElementById("again").onclick=function(){ start(1); };
   document.getElementById("resume").onclick=resume;
   document.getElementById("pause").onclick=function(){ state==="play"?pause():resume(); };
