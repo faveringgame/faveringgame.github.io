@@ -128,13 +128,20 @@ h2.red{color:#f43f5e}
     {n:"Le Petit Café",            w1:"#14213d", w2:"#3d5a80", c:"#7a4e2d", f:"#2b1d12", l:["#fde68a","#fff"]},
     {n:"Bar Ristorante Retrò",     w1:"#2d1b3d", w2:"#7b4b94", c:"#3f2a56", f:"#1f1428", l:["#22d3ee","#f0abfc"]},
     {n:"Bar Le More",              w1:"#0f2a1d", w2:"#2f6b4a", c:"#5c3a1a", f:"#22150a", l:["#a3e635","#fbbf24"]},
-    {n:"Piccola Sabry Bar",        w1:"#331a12", w2:"#9a4a2a", c:"#4a2c17", f:"#21130a", l:["#f97316","#fde047"]}
+    {n:"No Limits Café",           w1:"#331a12", w2:"#9a4a2a", c:"#4a2c17", f:"#21130a", l:["#f97316","#fde047"]}
   ];
   var PTS_PER_LEVEL = 20, TAXI_LEVEL = 7, ptsInLevel = 0;
   // livelli giocabili (i giochi arcade dedicati arrivano uno alla volta)
   var READY = [1, 2, 3, 4, 5, 6, 7];
   function nextLevel(l){ for(var n=l+1;n<=TAXI_LEVEL;n++) if(READY.indexOf(n)>=0) return n; return TAXI_LEVEL; }
   function isTaxi(){ return level===TAXI_LEVEL; }
+  function enterLevel(){
+    if(isTaxi()){ startTaxi(); return; }
+    buildBg(); items=[];
+    if(isShooter()) startShooter();
+    if(isBarista()) startBarista();
+    if(isBagno()) startBagno();
+  }
   function isShooter(){ return false; } // sparatutto tenuto da parte per un altro bar
 
   var cv = document.getElementById("c"), cx = cv.getContext("2d");
@@ -258,7 +265,7 @@ h2.red{color:#f43f5e}
   function start(lv){
     score=0; lives=3; level=(typeof lv==="number")?lv:1; ptsInLevel=0; drunk=0; items=[]; pops=[]; spawnT=0.6; drinks=0; rush=0; puffs=[];
     me.x=W/2; me.target=null; me.hurt=0; me.drink=null;
-    if(isTaxi()) startTaxi(); else { buildBg(); if(isShooter()) startShooter(); if(isBarista()) startBarista(); }
+    enterLevel();
     show(null); state="play"; updHud(); showBanner();
     last=performance.now(); requestAnimationFrame(loop);
     beep(523,0.1); setTimeout(function(){beep(784,0.14);},100);
@@ -282,7 +289,7 @@ h2.red{color:#f43f5e}
   }
   function showBanner(){
     document.getElementById("b1").textContent = "LIVELLO "+level;
-    document.getElementById("b2").textContent = isTaxi() ? "RITORNO A CASA IN TAXI" : (isBarista() ? "STASERA FAI TU IL BARISTA!" : (isShooter() ? "SPARA I TAPPI ALLE SVEGLIE!" : (level===1 ? "SI PARTE!" : "CAMBIO BAR!")));
+    document.getElementById("b2").textContent = isTaxi() ? "RITORNO A CASA IN TAXI" : isBagno() ? "SCAPPA IN BAGNO! EVITA LE BARISTE" : (isBarista() ? "STASERA FAI TU IL BARISTA!" : (isShooter() ? "SPARA I TAPPI ALLE SVEGLIE!" : (level===1 ? "SI PARTE!" : "CAMBIO BAR!")));
     document.getElementById("banner").classList.remove("hidden"); bannerT=2.2;
   }
   function updHud(){
@@ -312,6 +319,7 @@ h2.red{color:#f43f5e}
     blinkT-=dt; if(blinkT< -0.14) blinkT = 2+Math.random()*2.5;
     if(isShooter()){ updateShooter(dt); if(state==="play") updHud(); return; }
     if(isBarista()){ updateBarista(dt); if(state==="play") updHud(); return; }
+    if(isBagno()){ updateBagno(dt); if(state==="play") updHud(); return; }
 
     var fast = rush>0 ? 1.6 : 1;
     if(rush>0){ rush-=dt; rushT+=dt; }
@@ -349,7 +357,7 @@ h2.red{color:#f43f5e}
     ptsInLevel += it.pts;
     if(ptsInLevel>=PTS_PER_LEVEL && level<TAXI_LEVEL){
       ptsInLevel=0; level=nextLevel(level); drunk=Math.max(0,drunk-0.2);
-      if(isTaxi()) startTaxi(); else { buildBg(); items=[]; if(isShooter()) startShooter(); if(isBarista()) startBarista(); }
+      enterLevel();
       showBanner(); beep(1047,0.2);
     }
   }
@@ -416,6 +424,7 @@ h2.red{color:#f43f5e}
   /* disegno */
   function draw(){
     if(isTaxi() && TX){ drawTaxi(); return; }
+    if(isBagno() && WC){ drawBagno(); return; }
     cx.clearRect(0,0,W,H);
     cx.save(); if(rush>0 && rushT<0.5) cx.translate((Math.random()-.5)*8,(Math.random()-.5)*8);
     if(bg) cx.drawImage(bg,0,0,W,H);
@@ -646,7 +655,7 @@ h2.red{color:#f43f5e}
     for(i=puffs.length-1;i>=0;i--){ var q=puffs[i]; q.life-=dt; q.x+=q.vx*dt; q.y+=q.vy*dt; q.vx*=0.94; q.vy*=0.94; if(q.life<=0) puffs.splice(i,1); }
     // fine livello: 20 punti
     if(ptsInLevel>=PTS_PER_LEVEL){ ptsInLevel=0; level=nextLevel(level); drunk=Math.max(0,drunk-0.2); items=[]; SH=null;
-      if(isTaxi()) startTaxi(); else buildBg(); showBanner(); beep(1047,0.2); }
+      enterLevel(); showBanner(); beep(1047,0.2); }
   }
   function drawShooter(){
     if(!SH) return;
@@ -764,7 +773,7 @@ h2.red{color:#f43f5e}
     for(i=puffs.length-1;i>=0;i--){ var q=puffs[i]; q.life-=dt; q.x+=q.vx*dt; q.y+=q.vy*dt; q.vx*=0.94; q.vy*=0.94; if(q.life<=0) puffs.splice(i,1); }
     // fine livello: 20 punti
     if(ptsInLevel>=PTS_PER_LEVEL){ ptsInLevel=0; level=nextLevel(level); drunk=Math.max(0,drunk-0.2); items=[]; SB=null;
-      if(isTaxi()) startTaxi(); else buildBg(); showBanner(); beep(1047,0.2); }
+      enterLevel(); showBanner(); beep(1047,0.2); }
   }
   function drawGlass(x, by, type, f, showBand){
     var o=ORDERS[type], s=sc(), w=o.w*s, h=o.h*s, top=by-h;
@@ -855,6 +864,151 @@ h2.red{color:#f43f5e}
     var iy=groundY+(H-groundY)*0.45-9;
     cx.fillStyle="rgba(15,23,42,.75)"; var tw=cx.measureText(msg).width+16; cx.fillRect(W/2-tw/2, iy, tw, 18);
     cx.fillStyle="#fde68a"; cx.fillText(msg, W/2, iy+9);
+  }
+
+  /* ===== LIVELLO 3: DI CORSA IN BAGNO (LE PETIT CAFÉ) ===== */
+  var WC = null;
+  function isBagno(){ return level===3; }
+  function wcTop(){ return Math.max(H*0.26, 190); }
+  function wcBottom(){ return H*0.86; }
+  function startBagno(){
+    WC={trip:0, bx:W/2, by:wcBottom()-20, px:W/2, py:wcBottom()-20, inv:0, bar:24, barMax:24, tables:[], baristas:[], waters:[], hint:4, lurch:0, lurchT:2};
+    me.target=null; me.ty=null; layoutBagno();
+  }
+  function layoutBagno(){
+    var top=wcTop(), bot=wcBottom(), lanes=4, i, R=Math.max(20,Math.min(W*0.075,32));
+    WC.tables=[]; WC.baristas=[]; WC.waters=[];
+    var laneY=function(k){ return top+60+k*(bot-top-150)/(lanes-1); };
+    for(i=0;i<lanes;i++){
+      var n = 1 + (WC.trip>=1 && i%2===0 ? 1 : 0) + (WC.trip>=3 ? 1 : 0);
+      for(var j=0;j<n;j++) WC.baristas.push({x:Math.random()*W, y:laneY(i), dir:(i%2?1:-1), v:W*(0.16+0.045*WC.trip+0.03*i)*(0.85+Math.random()*0.3), hair:pick(HAIRS), step:Math.random()*6});
+    }
+    for(i=0;i<lanes-1;i++){
+      var ty=(laneY(i)+laneY(i+1))/2, tx=W*(0.2+Math.random()*0.6);
+      WC.tables.push({x:tx, y:ty, r:R, shot:Math.random()<0.6});
+    }
+    WC.waters.push({x:W*(0.15+Math.random()*0.7), y:(laneY(0)+laneY(1))/2+R*1.6});
+    WC.bar=WC.barMax=Math.max(14, 24-WC.trip*2);
+  }
+  function resetWalk(){ WC.bx=W/2; WC.by=wcBottom()-20; me.target=null; me.ty=null; }
+  function updateBagno(dt){
+    if(!WC) startBagno();
+    var fast = rush>0 ? 1.5 : 1; if(rush>0){ rush-=dt; rushT+=dt; }
+    if(WC.hint>0) WC.hint-=dt;
+    if(WC.inv>0) WC.inv-=dt;
+    // affaticato e dondolante: lento, ondeggia e ogni tanto barcolla
+    var spd=W*0.30*(1-0.45*drunk);
+    var tx=WC.bx, ty=WC.by;
+    if(me.target!==null && me.ty!=null){ tx=me.target; ty=me.ty; }
+    if(me.dir) tx=WC.bx+me.dir*100; if(me.diry) ty=WC.by+me.diry*100;
+    var dx=tx-WC.bx, dy=ty-WC.by, d=Math.hypot(dx,dy);
+    if(d>2){ var m=Math.min(d,spd*dt); WC.bx+=dx/d*m; WC.by+=dy/d*m; }
+    WC.lurchT-=dt; if(WC.lurchT<=0){ WC.lurch=0.5; WC.lurchT=1.6+Math.random()*2.4; WC.ldx=(Math.random()-.5)*2; WC.ldy=(Math.random()-.5)*1.2; }
+    if(WC.lurch>0){ WC.lurch-=dt; WC.bx+=WC.ldx*W*0.12*(0.6+drunk)*dt; WC.by+=WC.ldy*W*0.12*(0.6+drunk)*dt; }
+    WC.bx=clamp(WC.bx,24,W-24); WC.by=clamp(WC.by,wcTop()-10,wcBottom());
+    // i tavoli non si attraversano; se tocchi quello col bicchierino, lo bevi
+    var i;
+    for(i=0;i<WC.tables.length;i++){ var tb=WC.tables[i], ex=WC.bx-tb.x, ey=WC.by-tb.y, ed=Math.hypot(ex,ey), mind=tb.r+16;
+      if(ed<mind && ed>0.01){ WC.bx=tb.x+ex/ed*mind; WC.by=tb.y+ey/ed*mind;
+        if(tb.shot){ tb.shot=false; drunk=Math.min(1,drunk+0.14); score+=1; ptsInLevel+=1; me.drink={k:"amaro",t:0,dur:0.55};
+          pops.push({x:tb.x,y:tb.y-tb.r,txt:"Ancora uno! +1",life:1}); beep(180,0.07,"sine",0.12); setTimeout(function(){beep(150,0.07,"sine",0.12);},170);
+          drinks++; if(drinks % DRINKS_FOR_RUSH === 0) startRush();
+          if(drunk>=1){ lives--; me.hurt=0.8; drunk=0.45; pops.push({x:W/2,y:H*0.5,txt:"Troppo! Ti siedi un attimo",life:1.6,big:true}); vibrate(150);
+            if(lives<=0){ gameOver("Non ce l'hai fatta ad arrivare in bagno!"); return; } }
+        } } }
+    var sw=Math.sin(t*2.4)*(14+drunk*40), swy=Math.sin(t*1.7+1)*(5+drunk*12);
+    WC.px=clamp(WC.bx+sw,18,W-18); WC.py=WC.by+swy;
+    // acqua
+    for(i=WC.waters.length-1;i>=0;i--){ var wa=WC.waters[i]; if(Math.hypot(wa.x-WC.px,wa.y-WC.py)<30){ WC.waters.splice(i,1); drunk=Math.max(0,drunk-0.3); me.drink={k:"water",t:0,dur:0.6}; pops.push({x:wa.x,y:wa.y-20,txt:"Acqua!",life:1}); beep(500,0.08,"sine"); } }
+    // bariste con il vassoio
+    for(i=0;i<WC.baristas.length;i++){ var b=WC.baristas[i]; b.x+=b.dir*b.v*fast*dt; b.step+=dt*10;
+      if(b.x<-30){ b.x=-30; b.dir=1; } if(b.x>W+30){ b.x=W+30; b.dir=-1; }
+      if(WC.inv<=0 && Math.abs(b.x-WC.px)<26 && Math.abs(b.y-WC.py)<30){
+        WC.inv=1.4; lives--; me.hurt=0.8; pops.push({x:WC.px,y:WC.py-50,txt:"Ehi! Attento!",life:1.1}); beep(140,0.3,"sawtooth",0.08); vibrate(140);
+        if(lives<=0){ gameOver("Travolto dalle bariste: il bagno resta un miraggio!"); return; }
+        WC.by=Math.min(wcBottom(), WC.by+70); me.target=null; me.ty=null;
+      } }
+    // la vescica non aspetta
+    WC.bar-=dt*fast;
+    if(WC.bar<=0){ lives--; me.hurt=0.8; pops.push({x:W/2,y:H*0.5,txt:"Troppo tardi!",life:1.4,big:true}); beep(120,0.4,"sawtooth",0.08); vibrate(150);
+      if(lives<=0){ gameOver("Troppo tardi: la porta del bagno era lontana!"); return; }
+      WC.bar=WC.barMax; resetWalk(); }
+    // arrivato alla porta del bagno
+    if(WC.py<wcTop()+4 && Math.abs(WC.px-W/2)<44){
+      WC.trip++; score+=5; ptsInLevel+=5; drunk=Math.max(0,drunk-0.2);
+      pops.push({x:W/2,y:wcTop()+40,txt:"Ahhh, che sollievo! +5",life:1.6,big:true});
+      [523,659,784,1047].forEach(function(n,j){ setTimeout(function(){ beep(n,0.08); }, j*70); });
+      resetWalk(); layoutBagno();
+    }
+    for(i=pops.length-1;i>=0;i--){ pops[i].life-=dt; pops[i].y-=40*dt; if(pops[i].life<=0) pops.splice(i,1); }
+    for(i=puffs.length-1;i>=0;i--){ var q=puffs[i]; q.life-=dt; q.x+=q.vx*dt; q.y+=q.vy*dt; q.vx*=0.94; q.vy*=0.94; if(q.life<=0) puffs.splice(i,1); }
+    if(ptsInLevel>=PTS_PER_LEVEL){ ptsInLevel=0; level=nextLevel(level); drunk=Math.max(0,drunk-0.2); WC=null; enterLevel(); showBanner(); beep(1047,0.2); }
+  }
+  function drawBarista2(b){
+    var u=3, x=b.x, y=b.y, leg=Math.sin(b.step)*u;
+    cx.fillStyle="rgba(0,0,0,.25)"; cx.beginPath(); cx.ellipse(x,y+8*u,6*u,2*u,0,0,7); cx.fill();
+    cx.fillStyle="#1f2937"; cx.fillRect(x-2*u,y+3*u,u*1.5,5*u+leg); cx.fillRect(x+0.5*u,y+3*u,u*1.5,5*u-leg);
+    cx.fillStyle="#111827"; cx.fillRect(x-4*u,y-5*u,8*u,9*u);
+    cx.fillStyle="#f8fafc"; cx.fillRect(x-3*u,y-2*u,6*u,6*u);
+    cx.fillStyle="#f1c27d"; cx.fillRect(x-3*u,y-11*u,6*u,6*u);
+    cx.fillStyle=b.hair; cx.fillRect(x-3*u,y-12*u,6*u,2*u); cx.fillRect(x+(b.dir>0?-4:3)*u,y-11*u,u,6*u);
+    cx.fillStyle="#111"; cx.fillRect(x+(b.dir>0?1:-2)*u,y-9*u,u,u);
+    var tx=x+b.dir*6*u; cx.fillStyle="#f1c27d"; cx.fillRect(tx-u/2,y-8*u,u,5*u);
+    cx.fillStyle="#94a3b8"; cx.fillRect(tx-5*u,y-9*u,10*u,u*1.4);
+    cx.fillStyle="#f59e0b"; cx.fillRect(tx-4*u,y-13*u,2.5*u,4*u); cx.fillRect(tx+1.5*u,y-13*u,2.5*u,4*u);
+    cx.fillStyle="#fff8ec"; cx.fillRect(tx-4*u,y-14*u,2.5*u,1.3*u); cx.fillRect(tx+1.5*u,y-14*u,2.5*u,1.3*u);
+  }
+  function drawBagno(){
+    var top=wcTop(), i;
+    cx.clearRect(0,0,W,H); cx.save();
+    if(me.hurt>0) cx.translate((Math.random()-.5)*8,(Math.random()-.5)*8);
+    if(bg) cx.drawImage(bg,0,0,W,H);
+    // pavimento a scacchi del café
+    var tile=Math.max(26,W/13);
+    for(var y=top;y<H;y+=tile) for(var x=0;x<W;x+=tile){ cx.fillStyle=((Math.floor(x/tile)+Math.floor((y-top)/tile))%2) ? "#d6d3d1" : "#44403c"; cx.fillRect(x,y,tile+1,tile+1); }
+    cx.fillStyle="rgba(15,23,42,.35)"; cx.fillRect(0,top,W,H-top);
+    // porta del bagno
+    var dw=70, dh=54;
+    cx.fillStyle="#1e293b"; cx.fillRect(W/2-dw/2-6,top-dh-6,dw+12,dh+6);
+    cx.fillStyle="#7c4a2a"; cx.fillRect(W/2-dw/2,top-dh,dw,dh);
+    cx.fillStyle="#fde68a"; cx.fillRect(W/2+dw/2-14,top-dh/2,6,6);
+    cx.fillStyle="#f8fafc"; cx.fillRect(W/2-18,top-dh+8,36,18);
+    cx.fillStyle="#1e293b"; cx.font="10px 'Press Start 2P', monospace"; cx.textAlign="center"; cx.textBaseline="middle"; cx.fillText("WC",W/2,top-dh+18);
+    if(Math.floor(t*3)%2===0){ cx.fillStyle="#4ade80"; cx.fillRect(W/2-6,top+6,12,4); cx.fillRect(W/2-3,top+10,6,4); }
+    // tavoli
+    for(i=0;i<WC.tables.length;i++){ var tb=WC.tables[i];
+      cx.fillStyle="rgba(0,0,0,.3)"; cx.beginPath(); cx.arc(tb.x+3,tb.y+5,tb.r,0,7); cx.fill();
+      cx.fillStyle="#7a4e2d"; cx.beginPath(); cx.arc(tb.x,tb.y,tb.r,0,7); cx.fill();
+      cx.strokeStyle="#a8743c"; cx.lineWidth=3; cx.beginPath(); cx.arc(tb.x,tb.y,tb.r-4,0,7); cx.stroke();
+      if(tb.shot) drawItem({k:"amaro",x:tb.x,y:tb.y,r:tb.r*0.45,rot:0}); }
+    // acqua
+    for(i=0;i<WC.waters.length;i++) drawItem({k:"water",x:WC.waters[i].x,y:WC.waters[i].y,r:14,rot:0});
+    // bariste (dall'alto verso il basso per la profondità)
+    var bs=WC.baristas.slice().sort(function(a,b){return a.y-b.y;});
+    for(i=0;i<bs.length;i++) drawBarista2(bs[i]);
+    // io, affaticato
+    if(frames && !(WC.inv>0 && Math.floor(t*12)%2)){
+      var hx=WC.px, hy=WC.py, s=Math.max(0.8,Math.min(W/390,1.2)), fh=46*s, fw=28*s;
+      cx.fillStyle="rgba(0,0,0,.3)"; cx.beginPath(); cx.ellipse(hx,hy+14*s,16*s,5*s,0,0,7); cx.fill();
+      cx.fillStyle="#3a3438"; roundRect(hx-14*s,hy-12*s,28*s,26*s,6*s); cx.fill(); cx.fillStyle="#c9a646"; cx.fillRect(hx-14*s,hy-4*s,28*s,3*s);
+      cx.save(); cx.translate(hx,hy-10*s); cx.rotate(Math.sin(t*2.4)*(0.12+drunk*0.2)); cx.imageSmoothingEnabled=false;
+      var pant=Math.floor(t*4)%2===0, bl=blinkT<0 || !!me.drink, f = pant ? (bl?frames.pantBlink:frames.pant) : (bl?frames.blink:frames.base);
+      var red=0.12+drunk*0.45+(me.hurt>0?0.3:0); cx.drawImage(tintCanvas(f,red), -fw/2, -fh, fw, fh);
+      cx.fillStyle="#7dd3fc"; var dy=(t*40)%16; cx.fillRect(fw*0.55,-fh*0.8+dy,3,5); cx.fillRect(-fw*0.7,-fh*0.6+((dy+8)%16),3,5);
+      cx.restore();
+    }
+    // barra "SCAPPA!"
+    var bw=Math.min(W*0.6,240), bx=W/2-bw/2, by=H-34, pr=Math.max(0,WC.bar/WC.barMax);
+    cx.fillStyle="rgba(15,23,42,.85)"; cx.fillRect(bx-4,by-16,bw+8,30);
+    cx.fillStyle="#334155"; cx.fillRect(bx,by,bw,10); cx.fillStyle = pr>0.5 ? "#4ade80" : (pr>0.25 ? "#facc15" : "#ef4444"); cx.fillRect(bx,by,bw*pr,10);
+    cx.font="8px 'Press Start 2P', monospace"; cx.textAlign="center"; cx.textBaseline="bottom"; cx.fillStyle = pr<0.25 && Math.floor(t*6)%2 ? "#ef4444" : "#fff"; cx.fillText("SCAPPA!",W/2,by-3);
+    if(WC.hint>0){ var msg="TRASCINA IL DITO FINO AL BAGNO"; cx.font="8px 'Press Start 2P', monospace"; var tw=cx.measureText(msg).width+16;
+      cx.fillStyle="rgba(15,23,42,.8)"; cx.fillRect(W/2-tw/2,H-74,tw,20); cx.fillStyle="#fde68a"; cx.textBaseline="middle"; cx.fillText(msg,W/2,H-64); }
+    drawRush();
+    cx.textAlign="center"; cx.textBaseline="alphabetic";
+    for(i=0;i<pops.length;i++){ var p=pops[i]; cx.globalAlpha=Math.min(1,p.life*2);
+      cx.font="800 "+(p.big?24:22)+"px 'Baloo 2', 'Trebuchet MS', sans-serif"; cx.lineWidth=5; cx.strokeStyle="#0f172a"; cx.strokeText(p.txt,p.x,p.y); cx.fillStyle="#fde68a"; cx.fillText(p.txt,p.x,p.y); }
+    cx.globalAlpha=1; cx.restore();
   }
 
   /* ===== LIVELLO 7: RITORNO A CASA IN TAXI ===== */
@@ -1038,7 +1192,7 @@ h2.red{color:#f43f5e}
   }
 
   /* comandi */
-  function setTarget(e){ var r=game.getBoundingClientRect(); me.target=e.clientX-r.left; }
+  function setTarget(e){ var r=game.getBoundingClientRect(); me.target=e.clientX-r.left; me.ty=e.clientY-r.top; }
   game.addEventListener("pointerdown",function(e){
     if(state!=="play" || e.target.closest("button")) return;
     if(isBarista()){
@@ -1057,9 +1211,11 @@ h2.red{color:#f43f5e}
     }
     if(e.key==="ArrowLeft"){ me.dir=-1; e.preventDefault(); }
     else if(e.key==="ArrowRight"){ me.dir=1; e.preventDefault(); }
+    else if(e.key==="ArrowUp"){ me.diry=-1; e.preventDefault(); }
+    else if(e.key==="ArrowDown"){ me.diry=1; e.preventDefault(); }
     else if(e.key==="p"||e.key==="Escape"){ state==="play"?pause():resume(); }
   });
-  window.addEventListener("keyup",function(e){ if(e.key===" " && isBarista()) stopFill(); if((e.key==="ArrowLeft"&&me.dir<0)||(e.key==="ArrowRight"&&me.dir>0)) me.dir=0; });
+  window.addEventListener("keyup",function(e){ if(e.key===" " && isBarista()) stopFill(); if((e.key==="ArrowLeft"&&me.dir<0)||(e.key==="ArrowRight"&&me.dir>0)) me.dir=0; if(e.key==="ArrowUp"||e.key==="ArrowDown") me.diry=0; });
   document.getElementById("play").onclick=function(){ start(1); };
   (function(){
     var box=document.getElementById("lvsel");
