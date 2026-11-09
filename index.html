@@ -76,6 +76,11 @@ h2.red{color:#f43f5e}
 #dpad{position:absolute;left:12px;bottom:calc(12px + env(safe-area-inset-bottom,0px));width:132px;height:132px;display:none;pointer-events:none}
 #dpad button{position:absolute;width:44px;height:44px;border-radius:12px;border:2px solid rgba(255,255,255,.35);background:rgba(15,23,42,.32);color:rgba(255,255,255,.8);font-size:1rem;pointer-events:auto;touch-action:none;cursor:pointer;padding:0}
 #dpad button.on{background:rgba(245,158,11,.55);border-color:#fbbf24}
+#pfpad{position:absolute;left:0;right:0;bottom:calc(14px + env(safe-area-inset-bottom,0px));height:64px;display:none;pointer-events:none}
+#pfpad button{position:absolute;bottom:0;height:60px;border-radius:14px;border:2px solid rgba(255,255,255,.35);background:rgba(15,23,42,.32);color:rgba(255,255,255,.85);pointer-events:auto;touch-action:none;cursor:pointer;padding:0;font-size:1.2rem}
+#pfpad button.on{background:rgba(245,158,11,.55);border-color:#fbbf24}
+#pfpad .l{left:14px;width:64px} #pfpad .r{left:86px;width:64px}
+#pfpad .j{right:14px;width:96px;font-family:"Press Start 2P","Courier New",monospace;font-size:.62rem}
 #dpad .u{left:44px;top:0} #dpad .d{left:44px;top:88px} #dpad .l{left:0;top:44px} #dpad .r{left:88px;top:44px}
 @media (prefers-reduced-motion: reduce){.avatar{animation:none}}
 </style>
@@ -94,6 +99,9 @@ h2.red{color:#f43f5e}
     <button class="icon" id="pause" aria-label="Pausa">⏸</button>
   </div>
 
+  <div id="pfpad" aria-label="Comandi">
+    <button class="l" aria-label="Sinistra">◀</button><button class="r" aria-label="Destra">▶</button><button class="j" aria-label="Salta">SALTA</button>
+  </div>
   <div id="dpad" aria-label="Frecce di movimento">
     <button class="u" aria-label="Su">▲</button><button class="l" aria-label="Sinistra">◀</button><button class="r" aria-label="Destra">▶</button><button class="d" aria-label="Giù">▼</button>
   </div>
@@ -149,6 +157,7 @@ h2.red{color:#f43f5e}
     if(isShooter()) startShooter();
     if(isBarista()) startBarista();
     if(isBagno()) startBagno();
+    if(isPlatform()) startPlatform();
   }
   function isShooter(){ return false; } // sparatutto tenuto da parte per un altro bar
 
@@ -297,7 +306,7 @@ h2.red{color:#f43f5e}
   }
   function showBanner(){
     document.getElementById("b1").textContent = "LIVELLO "+level;
-    document.getElementById("b2").textContent = isTaxi() ? "RITORNO A CASA IN TAXI" : isBagno() ? "SCAPPA IN BAGNO! EVITA LE BARISTE" : (isBarista() ? "STASERA FAI TU IL BARISTA!" : (isShooter() ? "SPARA I TAPPI ALLE SVEGLIE!" : (level===1 ? "SI PARTE!" : "CAMBIO BAR!")));
+    document.getElementById("b2").textContent = isTaxi() ? "RITORNO A CASA IN TAXI" : isPlatform() ? "CORRI FINO AL BAR ROSSI!" : isBagno() ? "SCAPPA IN BAGNO! EVITA LE BARISTE" : (isBarista() ? "STASERA FAI TU IL BARISTA!" : (isShooter() ? "SPARA I TAPPI ALLE SVEGLIE!" : (level===1 ? "SI PARTE!" : "CAMBIO BAR!")));
     document.getElementById("banner").classList.remove("hidden"); bannerT=2.2;
   }
   function updHud(){
@@ -308,6 +317,7 @@ h2.red{color:#f43f5e}
     document.getElementById("drunk").style.width = Math.round(drunk*100)+"%";
     document.querySelector(".meter").style.display = isTaxi() ? "none" : "";
     document.getElementById("dpad").style.display = (isBagno() && state==="play") ? "block" : "none";
+    document.getElementById("pfpad").style.display = (isPlatform() && state==="play") ? "block" : "none";
   }
 
   function update(dt){
@@ -329,6 +339,7 @@ h2.red{color:#f43f5e}
     if(isShooter()){ updateShooter(dt); if(state==="play") updHud(); return; }
     if(isBarista()){ updateBarista(dt); if(state==="play") updHud(); return; }
     if(isBagno()){ updateBagno(dt); if(state==="play") updHud(); return; }
+    if(isPlatform()){ updatePlatform(dt); if(state==="play") updHud(); return; }
 
     var fast = rush>0 ? 1.6 : 1;
     if(rush>0){ rush-=dt; rushT+=dt; }
@@ -434,6 +445,7 @@ h2.red{color:#f43f5e}
   function draw(){
     if(isTaxi() && TX){ drawTaxi(); return; }
     if(isBagno() && WC){ drawBagno(); return; }
+    if(isPlatform() && PF){ drawPlatform(); return; }
     cx.clearRect(0,0,W,H);
     cx.save(); if(rush>0 && rushT<0.5) cx.translate((Math.random()-.5)*8,(Math.random()-.5)*8);
     if(bg) cx.drawImage(bg,0,0,W,H);
@@ -688,7 +700,7 @@ h2.red{color:#f43f5e}
     amaro:  {lbl:"AMARO",   w:34, h:50,  lo:0.62, hi:0.80, rate:0.60, liq:"#5b1a0c", shot:true}
   };
   var SHIRTS=["#ef4444","#3b82f6","#22c55e","#a855f7","#f97316","#14b8a6","#eab308"], HAIRS=["#1f2937","#78350f","#d6d3d1","#b45309","#111827"], SKINS=["#f1c27d","#e0ac69","#c68642","#ffdbac","#8d5524"];
-  function isBarista(){ return level===2; }
+  function isBarista(){ return false; } // barista tenuto da parte
   function pick(a){ return a[Math.floor(Math.random()*a.length)]; }
   function seatX(i){ return W*(0.2+0.3*i); }
   function counterY(){ return H*0.5; }
@@ -1085,6 +1097,179 @@ h2.red{color:#f43f5e}
     cx.globalAlpha=1; cx.restore();
   }
 
+  /* ===== LIVELLO 2: DI CORSA PER SOVERE FINO AL BAR ROSSI (PIATTAFORME) ===== */
+  var PF = null, jumpHeld = false;
+  function isPlatform(){ return level===2; }
+  function pfGround(){ return H-150; }
+  function startPlatform(){
+    var T=Math.max(26, Math.round(Math.min(W/12, H/22))), N=110, holes={}, solid={}, caps=[], beers=[], waters=[], clocks=[], c=10, i, r;
+    function put(cc,rr){ solid[cc+","+rr]=1; }
+    while(c<N-14){
+      var k=Math.random();
+      if(k<0.26){ var w=2+Math.floor(Math.random()*2); for(i=0;i<w;i++) holes[c+i]=1; caps.push({c:c+w/2, r:3.2}); c+=w+3; }
+      else if(k<0.48){ var h=1+Math.floor(Math.random()*2); for(r=1;r<=h;r++) put(c,r); if(Math.random()<.5) put(c+1,1); caps.push({c:c+0.5, r:h+1.8}); c+=5; }
+      else if(k<0.74){ var pr=3+Math.floor(Math.random()*2), pw=3+Math.floor(Math.random()*2); for(i=0;i<pw;i++){ put(c+i,pr); caps.push({c:c+i+0.5, r:pr+0.9}); }
+        if(Math.random()<.6) beers.push({c:c+pw/2, r:pr+2}); c+=pw+3; }
+      else { clocks.push({c:c+1.5}); caps.push({c:c+0.5,r:0.6},{c:c+1.5,r:0.6},{c:c+2.5,r:0.6}); c+=6; }
+      if(Math.random()<0.18) waters.push({c:c-1, r:0.7});
+    }
+    var G=pfGround();
+    PF={T:T, N:N, holes:holes, solid:solid, cam:0, check:2*T, done:0, inv:0, jumpLock:false,
+        caps:caps.map(function(o){ return {x:o.c*T, y:G-o.r*T, got:false}; }),
+        beers:beers.map(function(o){ return {x:o.c*T, y:G-o.r*T, got:false}; }),
+        waters:waters.map(function(o){ return {x:o.c*T, y:G-o.r*T, got:false}; }),
+        clocks:clocks.map(function(o){ return {x:o.c*T, dir:-1, alive:true, sq:0, step:0}; }),
+        p:{x:2*T, y:G-1.6*T, w:T*0.7, h:T*1.6, vx:0, vy:0, on:false}, doorX:(N-6)*T};
+    me.dir=0; me.diry=0; jumpHeld=false;
+  }
+  function pfSolid(x,y){
+    var T=PF.T, G=pfGround(), c=Math.floor(x/T);
+    if(c<0 || c>=PF.N) return true;
+    if(y>=G) return !PF.holes[c];
+    return !!PF.solid[c+","+(Math.floor((G-y)/T)+1)];
+  }
+  function updatePlatform(dt){
+    if(!PF) startPlatform();
+    var T=PF.T, G=pfGround(), p=PF.p, i;
+    var fast = rush>0 ? 1.4 : 1; if(rush>0){ rush-=dt; rushT+=dt; }
+    if(PF.inv>0) PF.inv-=dt;
+    // arrivato al Bar Rossi
+    if(PF.done>0){ PF.done-=dt; p.vx=0;
+      for(i=pops.length-1;i>=0;i--){ pops[i].life-=dt; pops[i].y-=40*dt; if(pops[i].life<=0) pops.splice(i,1); }
+      if(PF.done<=0){ ptsInLevel=0; level=nextLevel(level); drunk=Math.max(0,drunk-0.2); PF=null; enterLevel(); showBanner(); beep(1047,0.2); }
+      return; }
+    // corsa: da sbronzo si slitta e si sbanda
+    var maxv=T*7*(1-0.3*drunk), acc=T*38*(1-0.5*drunk);
+    var target=(me.dir||0)*maxv + Math.sin(t*2.3)*drunk*T*2.5;
+    var dv=target-p.vx; p.vx += Math.max(-acc*dt, Math.min(acc*dt, dv));
+    var g=T*60, v0=Math.sqrt(2*g*T*4.2)*(1-0.12*drunk);
+    var wantJump = jumpHeld || (me.diry<0);
+    if(wantJump && p.on && !PF.jumpLock){ p.vy=-v0; p.on=false; PF.jumpLock=true; beep(520,0.06,"square",0.05); setTimeout(function(){beep(780,0.05,"square",0.04);},50); }
+    if(!wantJump){ PF.jumpLock=false; if(p.vy<0) p.vy+=g*1.6*dt; }
+    p.vy=Math.min(p.vy+g*dt, T*22);
+    // movimento orizzontale con urti
+    p.x+=p.vx*dt;
+    if(p.vx>0){ var xr=p.x+p.w; if(pfSolid(xr,p.y+2)||pfSolid(xr,p.y+p.h/2)||pfSolid(xr,p.y+p.h-2)){ p.x=Math.floor(xr/T)*T-p.w-0.01; p.vx=0; } }
+    else if(p.vx<0){ var xl=p.x; if(pfSolid(xl,p.y+2)||pfSolid(xl,p.y+p.h/2)||pfSolid(xl,p.y+p.h-2)){ p.x=(Math.floor(xl/T)+1)*T+0.01; p.vx=0; } }
+    // movimento verticale
+    p.y+=p.vy*dt; p.on=false;
+    if(p.vy>0){ var yb=p.y+p.h; if(pfSolid(p.x+2,yb)||pfSolid(p.x+p.w-2,yb)){
+        var top = yb>=G ? G : G-(Math.floor((G-yb)/T)+1)*T; p.y=top-p.h; p.vy=0; p.on=true;
+        if(top===G && !PF.holes[Math.floor((p.x+p.w/2)/T)]) PF.check=p.x; } }
+    else if(p.vy<0){ if(pfSolid(p.x+2,p.y)||pfSolid(p.x+p.w-2,p.y)){ var r=Math.floor((G-p.y)/T)+1; p.y=G-(r-1)*T+0.01; p.vy=0; beep(160,0.05,"square",0.04); } }
+    // caduto in una buca
+    if(p.y>H+40){ lives--; me.hurt=0.8; pops.push({x:W/2,y:H*0.45,txt:"Che volo!",life:1.2,big:true}); beep(200,0.1,"square",0.07); setTimeout(function(){beep(120,0.3,"square",0.07);},100); vibrate(140);
+      if(lives<=0){ gameOver("Caduto in una buca: al Bar Rossi non ci sei arrivato!"); return; }
+      p.x=PF.check; p.y=G-p.h-T*3; p.vx=0; p.vy=0; PF.inv=1.5; }
+    var pcx=p.x+p.w/2, pcy=p.y+p.h/2;
+    // tappi, birre e acqua
+    PF.caps.forEach(function(o){ if(!o.got && Math.abs(o.x-pcx)<T*0.6 && Math.abs(o.y-pcy)<T*0.95){ o.got=true; score++; beep(1180,0.05,"square",0.04); setTimeout(function(){beep(1570,0.06,"square",0.04);},45); } });
+    PF.beers.forEach(function(o){ if(!o.got && Math.abs(o.x-pcx)<T*0.7 && Math.abs(o.y-pcy)<T){ o.got=true; score+=2; drunk=Math.min(1,drunk+0.1); me.drink={k:"bottle",t:0,dur:0.6};
+      pops.push({x:o.x-PF.cam,y:o.y-T,txt:"Glu glu! +2",life:0.9}); beep(180,0.07,"sine",0.12); setTimeout(function(){beep(150,0.07,"sine",0.12);},170);
+      drinks++; if(drinks % DRINKS_FOR_RUSH === 0) startRush();
+      if(drunk>=1){ lives--; me.hurt=0.8; drunk=0.45; pops.push({x:W/2,y:H*0.45,txt:"Troppo! Ti siedi un attimo",life:1.6,big:true}); } } });
+    if(lives<=0){ gameOver("Troppe birre per strada!"); return; }
+    PF.waters.forEach(function(o){ if(!o.got && Math.abs(o.x-pcx)<T*0.7 && Math.abs(o.y-pcy)<T){ o.got=true; drunk=Math.max(0,drunk-0.3); pops.push({x:o.x-PF.cam,y:o.y-T,txt:"Acqua!",life:0.9}); beep(500,0.08,"sine"); } });
+    // sveglie che camminano: saltaci sopra
+    for(i=0;i<PF.clocks.length;i++){ var k=PF.clocks[i];
+      if(!k.alive){ k.sq-=dt; continue; }
+      k.step+=dt*8; var nx=k.x+k.dir*T*2*fast*dt, ahead=nx+k.dir*T*0.5;
+      if(PF.holes[Math.floor(ahead/T)] || pfSolid(ahead,G-T*0.5) || ahead<T || ahead>PF.doorX-T) k.dir*=-1; else k.x=nx;
+      if(Math.abs(k.x-pcx)<T*0.75 && p.y+p.h>G-T && p.y<G){
+        if(p.vy>0 && p.y+p.h<G-T*0.35){ k.alive=false; k.sq=0.5; p.vy=-v0*0.6; score+=2; pops.push({x:k.x-PF.cam,y:G-T*1.5,txt:"Zitta! +2",life:0.9}); beep(300,0.06,"square",0.07); setTimeout(function(){beep(200,0.08,"square",0.07);},60); }
+        else if(PF.inv<=0){ lives--; me.hurt=0.8; PF.inv=1.5; p.vx=(pcx<k.x?-1:1)*T*6; p.vy=-v0*0.4; pops.push({x:pcx-PF.cam,y:p.y-10,txt:"Driiin!",life:1}); beep(150,0.25,"square",0.09); vibrate(100);
+          if(lives<=0){ gameOver("Le sveglie ti hanno fermato prima del Bar Rossi!"); return; } }
+      } }
+    // telecamera
+    PF.cam=Math.max(0, Math.min(PF.N*T-W, pcx-W*0.4));
+    // la porta del bar
+    if(pcx>PF.doorX){ PF.done=2; score+=10; pops.push({x:W/2,y:H*0.38,txt:"SA BIÈT? +10",life:2,big:true});
+      [523,659,784,1047,784,1047].forEach(function(n,j){ setTimeout(function(){ beep(n,0.1,"square",0.06); }, j*90); }); }
+    for(i=pops.length-1;i>=0;i--){ pops[i].life-=dt; pops[i].y-=40*dt; if(pops[i].life<=0) pops.splice(i,1); }
+    for(i=puffs.length-1;i>=0;i--){ var q=puffs[i]; q.life-=dt; q.x+=q.vx*dt; q.y+=q.vy*dt; q.vx*=0.94; q.vy*=0.94; if(q.life<=0) puffs.splice(i,1); }
+  }
+  function drawCrate(x,y,T,top){
+    cx.fillStyle="#9a6b3c"; cx.fillRect(x,y,T,T);
+    cx.fillStyle="#b7864f"; cx.fillRect(x+3,y+3,T-6,T*0.28); cx.fillRect(x+3,y+T*0.38,T-6,T*0.24); cx.fillRect(x+3,y+T*0.7,T-6,T*0.26);
+    cx.fillStyle="#5c3a1a"; cx.fillRect(x,y,T,2); cx.fillRect(x,y+T-2,T,2); cx.fillRect(x,y,2,T); cx.fillRect(x+T-2,y,2,T);
+    cx.fillStyle="#3b2412"; cx.fillRect(x+T*0.35,y+T*0.42,T*0.3,T*0.14);
+    if(top){ for(var b=0;b<3;b++){ var bx=x+T*(0.2+b*0.3); cx.fillStyle="#7c3a0a"; cx.fillRect(bx-2,y-7,5,9); cx.fillStyle="#fbbf24"; cx.fillRect(bx-3,y-9,7,3); } }
+  }
+  function drawCap(x,y,T){
+    var r=T*0.26, sp=Math.abs(Math.cos(t*4+x*0.05));
+    cx.fillStyle="#b45309"; cx.beginPath(); cx.ellipse(x,y,r*sp+1.5,r,0,0,7); cx.fill();
+    cx.fillStyle="#fbbf24"; cx.beginPath(); cx.ellipse(x,y,(r-3)*sp+1,r-3,0,0,7); cx.fill();
+    if(sp>0.5){ cx.fillStyle="#b45309"; cx.fillRect(x-2,y-2,4,4); }
+  }
+  function drawPlatform(){
+    var T=PF.T, G=pfGround(), cam=PF.cam, p=PF.p, i, c, x;
+    cx.clearRect(0,0,W,H); cx.save();
+    if(me.hurt>0) cx.translate((Math.random()-.5)*6,(Math.random()-.5)*6);
+    // cielo di sera su Sovere
+    var gr=cx.createLinearGradient(0,0,0,G); gr.addColorStop(0,"#0b1026"); gr.addColorStop(1,"#4c2a5e"); cx.fillStyle=gr; cx.fillRect(0,0,W,H);
+    cx.fillStyle="#fde68a"; for(i=0;i<50;i++){ var sx=((i*137.5)-cam*0.05)%W; if(sx<0) sx+=W; cx.globalAlpha=0.3+((i*13)%7)/10; cx.fillRect(sx,(i*53.3)%(G*0.5),2,2); } cx.globalAlpha=1;
+    cx.fillStyle="#fef3c7"; cx.beginPath(); cx.arc(W*0.8,H*0.17,Math.min(W,H)*0.05,0,7); cx.fill();
+    // montagne (due piani)
+    [[0.12,"#1c1838",G*0.42,0.0042],[0.28,"#262046",G*0.6,0.0065]].forEach(function(L){
+      cx.fillStyle=L[1]; cx.beginPath(); cx.moveTo(0,G);
+      for(var xx=0;xx<=W;xx+=8){ var wx=xx+cam*L[0]; cx.lineTo(xx, L[2]-Math.abs(Math.sin(wx*L[3]))*H*0.14-Math.sin(wx*L[3]*2.7)*H*0.03); }
+      cx.lineTo(W,G); cx.closePath(); cx.fill(); });
+    // case del paese
+    var per=T*4, off=(cam*0.55)%per;
+    for(x=-per-off;x<W+per;x+=per){ var idx=Math.floor((x+cam*0.55)/per), hh=T*(2.5+((idx*7)%3)), hw=T*3.2;
+      cx.fillStyle="#2f2742"; cx.fillRect(x,G-hh,hw,hh);
+      cx.fillStyle="#3b2f52"; cx.beginPath(); cx.moveTo(x-6,G-hh); cx.lineTo(x+hw/2,G-hh-T*0.9); cx.lineTo(x+hw+6,G-hh); cx.fill();
+      for(var wy=0;wy<2;wy++) for(var wx2=0;wx2<2;wx2++){ cx.fillStyle=((idx+wy+wx2)%3===0)?"#3a3150":"#fcd34d"; cx.fillRect(x+T*(0.5+wx2*1.4),G-hh+T*(0.6+wy*1.1),T*0.6,T*0.6); } }
+    // lampioni
+    for(c=Math.floor(cam/T/9)*9;c*T<cam+W+T;c+=9){ x=c*T-cam+T*0.5; cx.fillStyle="#475569"; cx.fillRect(x-2,G-T*3.2,4,T*3.2);
+      var lg=cx.createRadialGradient(x,G-T*3.3,2,x,G-T*3.3,T*2); lg.addColorStop(0,"rgba(253,230,138,.45)"); lg.addColorStop(1,"rgba(253,230,138,0)"); cx.fillStyle=lg; cx.beginPath(); cx.arc(x,G-T*3.3,T*2,0,7); cx.fill();
+      cx.fillStyle="#fde68a"; cx.fillRect(x-5,G-T*3.4,10,6); }
+    // bar Rossi alla fine
+    var bx=PF.doorX-T*2.5-cam, bw=T*7;
+    if(bx<W && bx+bw>0){ cx.fillStyle="#5b1a2e"; cx.fillRect(bx,G-T*5,bw,T*5); cx.fillStyle="#3b0f1d"; cx.fillRect(bx-6,G-T*5.3,bw+12,T*0.4);
+      cx.fillStyle="#0b0b14"; cx.fillRect(bx+T*0.5,G-T*4.6,bw-T,T*1.1); cx.strokeStyle="#f43f5e"; cx.lineWidth=3; cx.shadowColor="#f43f5e"; cx.shadowBlur=12; cx.strokeRect(bx+T*0.5,G-T*4.6,bw-T,T*1.1); cx.shadowBlur=0;
+      cx.fillStyle="#fff"; cx.font=Math.max(8,Math.round(T*0.38))+"px 'Press Start 2P', monospace"; cx.textAlign="center"; cx.textBaseline="middle"; cx.fillText("BAR ROSSI 2.0",bx+bw/2,G-T*4.05);
+      cx.fillStyle="#fcd34d"; cx.fillRect(bx+T*2,G-T*2.6,T*3,T*2.6); cx.fillStyle="#7c4a2a"; cx.fillRect(bx+T*2.2,G-T*2.4,T*2.6,T*2.4);
+      cx.fillStyle="#fde68a"; cx.fillRect(bx+T*0.6,G-T*2.8,T,T); cx.fillRect(bx+bw-T*1.6,G-T*2.8,T,T); }
+    // terreno a ciottoli con le buche
+    var c0=Math.max(0,Math.floor(cam/T)), c1=Math.min(PF.N-1,Math.ceil((cam+W)/T));
+    for(c=c0;c<=c1;c++){ x=c*T-cam; if(PF.holes[c]){ cx.fillStyle="#07060d"; cx.fillRect(x,G,T+1,H-G); continue; }
+      cx.fillStyle="#3f3127"; cx.fillRect(x,G,T+1,H-G);
+      cx.fillStyle="#7c6a58"; cx.fillRect(x,G,T+1,T*0.5);
+      cx.fillStyle="#5c4d3f"; cx.fillRect(x+(c%2?T*0.5:0),G+T*0.22,2,T*0.28); cx.fillRect(x,G+T*0.22,T,2);
+      cx.fillStyle="#9c8a76"; cx.fillRect(x,G,T+1,3); }
+    // casse
+    for(var key in PF.solid){ var a=key.split(","), cc=+a[0], rr=+a[1]; if(cc<c0-1||cc>c1+1) continue; drawCrate(cc*T-cam, G-rr*T, T, !PF.solid[cc+","+(rr+1)]); }
+    // tappi, birre, acqua
+    PF.caps.forEach(function(o){ if(!o.got && o.x-cam>-T && o.x-cam<W+T) drawCap(o.x-cam,o.y+Math.sin(t*3+o.x)*2,T); });
+    PF.beers.forEach(function(o){ if(!o.got && o.x-cam>-T && o.x-cam<W+T) drawItem({k:"bottle",x:o.x-cam,y:o.y+Math.sin(t*3)*3,r:T*0.5,rot:0}); });
+    PF.waters.forEach(function(o){ if(!o.got && o.x-cam>-T && o.x-cam<W+T) drawItem({k:"water",x:o.x-cam,y:o.y,r:T*0.45,rot:0}); });
+    // sveglie con le zampette
+    PF.clocks.forEach(function(k){ var kx=k.x-cam; if(kx<-T||kx>W+T) return;
+      if(!k.alive){ if(k.sq>0){ cx.fillStyle="#e11d48"; cx.fillRect(kx-T*0.45,G-T*0.2,T*0.9,T*0.2); } return; }
+      var lg2=Math.sin(k.step)*3; cx.fillStyle="#1f2937"; cx.fillRect(kx-T*0.25,G-T*0.25+lg2,4,T*0.25-lg2); cx.fillRect(kx+T*0.18,G-T*0.25-lg2,4,T*0.25+lg2);
+      drawItem({k:"clock",x:kx,y:G-T*0.62,r:T*0.42,rot:0}); });
+    // io
+    if(frames && !(PF.inv>0 && Math.floor(t*12)%2)){
+      var px=p.x-cam+p.w/2, py=p.y, running=Math.abs(p.vx)>T*0.5 && p.on, lg3=running?Math.sin(t*16)*T*0.18:0;
+      cx.fillStyle="#1f2937"; cx.fillRect(px-p.w*0.3,py+p.h*0.78,p.w*0.22,p.h*0.22+(p.on?lg3*0.3:0)); cx.fillRect(px+p.w*0.08,py+p.h*0.78,p.w*0.22,p.h*0.22-(p.on?lg3*0.3:0));
+      cx.fillStyle="#3a3438"; roundRect(px-p.w*0.5,py+p.h*0.46,p.w,p.h*0.36,4); cx.fill(); cx.fillStyle="#c9a646"; cx.fillRect(px-p.w*0.5,py+p.h*0.58,p.w,3);
+      var ay = p.on ? py+p.h*0.5 : py+p.h*0.3; cx.fillStyle="#3a3438"; cx.fillRect(px-p.w*0.68,ay,p.w*0.18,p.h*0.22); cx.fillRect(px+p.w*0.5,ay,p.w*0.18,p.h*0.22);
+      cx.save(); cx.translate(px,py+p.h*0.48); cx.rotate(Math.sin(t*2.3)*drunk*0.15); cx.imageSmoothingEnabled=false;
+      var fh=p.h*0.62, fw=fh*28/46, bl=blinkT<0 || !!me.drink, pant=drunk>0.55 && Math.floor(t*4)%2===0, fr = pant ? (bl?frames.pantBlink:frames.pant) : (bl?frames.blink:frames.base);
+      var red=Math.max(drunk-0.15,0)/0.85*0.55+(me.hurt>0?0.35:0); cx.drawImage(red>0.01?tintCanvas(fr,red):fr,-fw/2,-fh,fw,fh); cx.restore();
+    }
+    // percorso verso il bar
+    var pbw=W-40, pbx=20, pby=58, prog=Math.min(1,(p.x)/(PF.doorX));
+    cx.fillStyle="rgba(15,23,42,.85)"; cx.fillRect(pbx-4,pby-4,pbw+8,16); cx.fillStyle="#334155"; cx.fillRect(pbx,pby,pbw,8); cx.fillStyle="#f43f5e"; cx.fillRect(pbx,pby,pbw*prog,8);
+    cx.font="8px 'Press Start 2P', monospace"; cx.textAlign="right"; cx.textBaseline="top"; cx.fillStyle="#fff"; cx.fillText("BAR ROSSI",pbx+pbw,pby+14);
+    drawRush();
+    cx.textAlign="center"; cx.textBaseline="alphabetic";
+    for(i=0;i<pops.length;i++){ var pp=pops[i]; cx.globalAlpha=Math.min(1,pp.life*2);
+      cx.font="800 "+(pp.big?26:22)+"px 'Baloo 2', 'Trebuchet MS', sans-serif"; cx.lineWidth=5; cx.strokeStyle="#0f172a"; cx.strokeText(pp.txt,pp.x,pp.y); cx.fillStyle="#fde68a"; cx.fillText(pp.txt,pp.x,pp.y); }
+    cx.globalAlpha=1; cx.restore();
+  }
+
   /* ===== LIVELLO 7: RITORNO A CASA IN TAXI ===== */
   var TX = null, ROAD_LEN = 70;
   var CAR_COLS = ["#ef4444","#3b82f6","#22c55e","#a855f7","#f97316","#e5e7eb","#14b8a6"];
@@ -1283,13 +1468,24 @@ h2.red{color:#f43f5e}
       if(e.key==="1"||e.key==="2"||e.key==="3"){ selectSeat(+e.key-1); return; }
       if(e.key===" "){ e.preventDefault(); if(!e.repeat) startFill(); return; }
     }
+    if(e.key===" " && isPlatform()){ e.preventDefault(); jumpHeld=true; return; }
     if(e.key==="ArrowLeft"){ me.dir=-1; e.preventDefault(); }
     else if(e.key==="ArrowRight"){ me.dir=1; e.preventDefault(); }
     else if(e.key==="ArrowUp"){ me.diry=-1; e.preventDefault(); }
     else if(e.key==="ArrowDown"){ me.diry=1; e.preventDefault(); }
     else if(e.key==="p"||e.key==="Escape"){ state==="play"?pause():resume(); }
   });
-  window.addEventListener("keyup",function(e){ if(e.key===" " && isBarista()) stopFill(); if((e.key==="ArrowLeft"&&me.dir<0)||(e.key==="ArrowRight"&&me.dir>0)) me.dir=0; if(e.key==="ArrowUp"||e.key==="ArrowDown") me.diry=0; });
+  window.addEventListener("keyup",function(e){ if(e.key===" " && isBarista()) stopFill(); if(e.key===" ") jumpHeld=false; if((e.key==="ArrowLeft"&&me.dir<0)||(e.key==="ArrowRight"&&me.dir>0)) me.dir=0; if(e.key==="ArrowUp"||e.key==="ArrowDown") me.diry=0; });
+  [["l",-1],["r",1]].forEach(function(a){
+    var b=document.querySelector("#pfpad ."+a[0]);
+    var on=function(e){ e.preventDefault(); me.dir=a[1]; b.classList.add("on"); };
+    var off=function(){ if(me.dir===a[1]) me.dir=0; b.classList.remove("on"); };
+    b.addEventListener("pointerdown",on); ["pointerup","pointercancel","pointerleave"].forEach(function(ev){ b.addEventListener(ev,off); });
+  });
+  (function(){ var b=document.querySelector("#pfpad .j");
+    b.addEventListener("pointerdown",function(e){ e.preventDefault(); jumpHeld=true; b.classList.add("on"); });
+    ["pointerup","pointercancel","pointerleave"].forEach(function(ev){ b.addEventListener(ev,function(){ jumpHeld=false; b.classList.remove("on"); }); });
+  })();
   [["u",0,-1],["d",0,1],["l",-1,0],["r",1,0]].forEach(function(a){
     var b=document.querySelector("#dpad ."+a[0]);
     var on=function(e){ e.preventDefault(); if(a[1]) me.dir=a[1]; if(a[2]) me.diry=a[2]; b.classList.add("on"); };
