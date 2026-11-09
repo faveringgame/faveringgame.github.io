@@ -130,9 +130,9 @@ h2.red{color:#f43f5e}
     {n:"Bar Le More",              w1:"#0f2a1d", w2:"#2f6b4a", c:"#5c3a1a", f:"#22150a", l:["#a3e635","#fbbf24"]},
     {n:"Piccola Sabry Bar",        w1:"#331a12", w2:"#9a4a2a", c:"#4a2c17", f:"#21130a", l:["#f97316","#fde047"]}
   ];
-  var PTS_PER_LEVEL = 15, TAXI_LEVEL = 7, ptsInLevel = 0;
-  // livelli già pronti: gli altri bar arrivano uno alla volta
-  var READY = [1, 7];
+  var PTS_PER_LEVEL = 20, TAXI_LEVEL = 7, ptsInLevel = 0;
+  // livelli giocabili (i giochi arcade dedicati arrivano uno alla volta)
+  var READY = [1, 2, 3, 4, 5, 6, 7];
   function nextLevel(l){ for(var n=l+1;n<=TAXI_LEVEL;n++) if(READY.indexOf(n)>=0) return n; return TAXI_LEVEL; }
   function isTaxi(){ return level===TAXI_LEVEL; }
 
