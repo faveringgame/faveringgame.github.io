@@ -1904,6 +1904,7 @@ a.arcade-btn{text-decoration:none;display:inline-block}
     SP={wave:0, en:[], shots:[], eb:[], pups:[], fireT:0.5, dbl:0, boss:null, gx:W/2, gy:0, dir:1, diveT:3, waveT:0, stars:stars, inv:0, planet:0};
     me.x=W/2; me.target=null; nextSpaceWave();
   }
+  function aimShot(x,y,spd){ var dx=me.x-x, dy=Math.max(H*0.15, shipY()-y), d=Math.hypot(dx,dy)||1; return {vx:dx/d*spd, vy:dy/d*spd}; }
   function enR(){ return Math.max(13, Math.min(W/22, 19)); }
   function nextSpaceWave(){
     SP.wave++; SP.en=[]; SP.eb=[]; var r=enR();
@@ -1917,7 +1918,7 @@ a.arcade-btn{text-decoration:none;display:inline-block}
       SP.waveT=1.6; pops.push({x:W/2,y:H*0.45,txt:"ONDATA "+SP.wave+" DI 3",life:1.6,big:true});
     } else {
       playMusic("boss");
-      SP.boss={x:W/2, y:Math.max(H*0.31,240), hp:50, max:50, dir:1, fireT:2, spawnT:4, flash:0, t:0, phase:1, lastPhase:1, mode:"move", modeT:3, beat:0, shake:0};
+      SP.boss={x:W/2, y:Math.max(H*0.31,240), hp:40, max:40, dir:1, fireT:2, spawnT:4, flash:0, t:0, phase:1, lastPhase:1, mode:"move", modeT:3, beat:0, shake:0};
       SP.waveT=2; pops.push({x:W/2,y:H*0.45,txt:"IL JUKE-BOX IMPAZZITO!",life:2,big:true});
       beep(110,0.5,"sawtooth",0.08);
     }
@@ -1929,7 +1930,7 @@ a.arcade-btn{text-decoration:none;display:inline-block}
   }
   function updateSpace(dt){
     if(!SP) startSpace();
-    var fast = rush>0 ? 1.3 : 1; if(rush>0){ rush-=dt; rushT+=dt; }
+    var fast = rush>0 ? 1.15 : 1; if(rush>0){ rush-=dt; rushT+=dt; }
     var i, j, r=enR(), sy=shipY();
     SP.stars.forEach(function(s){ s.y+=s.z*H*0.06*dt; s.x+=Math.sin(t+s.z*9)*10*dt; if(s.y>H){ s.y=0; s.x=Math.random()*W; } });
     SP.planet+=dt;
@@ -1954,7 +1955,7 @@ a.arcade-btn{text-decoration:none;display:inline-block}
     if(SP.wave<=3 && !alive.length && SP.waveT<=0){ nextSpaceWave(); return; }
     if(alive.length){
       var minX=Infinity,maxX=-Infinity; alive.forEach(function(e){ if(!e.dive){ minX=Math.min(minX,e.fx); maxX=Math.max(maxX,e.fx); } });
-      var vel=W*(0.09+0.03*SP.wave)*(1+1.3*(1-alive.length/SP.total))*fast;
+      var vel=W*(0.07+0.02*SP.wave)*(1+0.7*(1-alive.length/SP.total))*fast;
       SP.gx+=SP.dir*vel*dt;
       if(SP.gx+maxX>W-r-8){ SP.gx=W-r-8-maxX; SP.dir=-1; SP.gy+=r*0.35; }
       if(SP.gx+minX<r+8){ SP.gx=r+8-minX; SP.dir=1; SP.gy+=r*0.35; }
@@ -1962,13 +1963,13 @@ a.arcade-btn{text-decoration:none;display:inline-block}
       // picchiate verso la navicella (dalla seconda ondata)
       SP.diveT-=dt*fast;
       if(SP.wave>=2 && SP.diveT<=0){ var cand=alive.filter(function(e){ return !e.dive; }); if(cand.length){ var e=cand[Math.floor(Math.random()*cand.length)], p0=enPos(e); e.dive={t:0,x0:p0.x,y0:p0.y,tx:me.x,shot:false}; beep(700,0.1,"triangle",0.04); }
-        SP.diveT=Math.max(1.1, 3.2-SP.wave*0.6)*(0.7+Math.random()*0.6); }
-      alive.forEach(function(e){ if(e.dive){ e.dive.t+=dt*0.42*fast;
-          if(!e.dive.shot && e.dive.t>0.35){ e.dive.shot=true; var pp=enPos(e); SP.eb.push({x:pp.x,y:pp.y,vx:(me.x-pp.x)*0.6,vy:H*0.45}); }
+        SP.diveT=Math.max(2.2, 4.2-SP.wave*0.5)*(0.8+Math.random()*0.5); }
+      alive.forEach(function(e){ if(e.dive){ e.dive.t+=dt*0.3*fast;
+          if(!e.dive.shot && e.dive.t>0.35){ e.dive.shot=true; var pp=enPos(e); var ad=aimShot(pp.x,pp.y,H*0.3); SP.eb.push({x:pp.x,y:pp.y,vx:ad.vx,vy:ad.vy}); }
           if(e.dive.t>=1){ e.dive=null; } } });
       // spari della formazione
-      if(Math.random()<dt*(0.6+SP.wave*0.35)*fast){ var sh=alive[Math.floor(Math.random()*alive.length)], q=enPos(sh);
-        SP.eb.push({x:q.x,y:q.y+r,vx: sh.kind==="phone" ? (me.x-q.x)*0.35 : 0, vy:H*(0.32+0.04*SP.wave)}); }
+      if(SP.eb.length<4+SP.wave*2 && Math.random()<dt*(0.45+SP.wave*0.2)*fast){ var sh=alive[Math.floor(Math.random()*alive.length)], q=enPos(sh);
+        if(sh.kind==="phone"){ var am=aimShot(q.x,q.y+r,H*0.27); SP.eb.push({x:q.x,y:q.y+r,vx:am.vx,vy:am.vy}); } else SP.eb.push({x:q.x,y:q.y+r,vx:0,vy:H*0.27}); }
     }
     // il Juke-box impazzito
     var B=SP.boss;
@@ -1983,26 +1984,26 @@ a.arcade-btn{text-decoration:none;display:inline-block}
         B.x+=B.dir*W*(0.12+B.phase*0.05)*fast*dt; if(B.x>W-70){ B.x=W-70; B.dir=-1; } if(B.x<70){ B.x=70; B.dir=1; }
         B.y+= (homeY+Math.sin(B.t*1.3)*18 - B.y)*Math.min(1,dt*4);
         B.fireT-=dt*fast;
-        if(B.fireT<=0){ var nb=B.phase===3 ? 7 : 5; for(j=0;j<nb;j++){ var a=Math.PI/2+(j-(nb-1)/2)*0.22; SP.eb.push({x:B.x,y:B.y+56,vx:Math.cos(a)*H*0.33,vy:Math.sin(a)*H*0.33,note:true}); }
-          B.fireT=B.phase===3 ? 1.1 : 1.6; B.beat=0.2; beep(196,0.12,"square",0.06); }
+        if(B.fireT<=0){ var nb=B.phase===3 ? 5 : (B.phase===2 ? 4 : 3); for(j=0;j<nb;j++){ var a=Math.PI/2+(j-(nb-1)/2)*0.32; SP.eb.push({x:B.x,y:B.y+56,vx:Math.cos(a)*H*0.25,vy:Math.sin(a)*H*0.25,note:true}); }
+          B.fireT=B.phase===3 ? 1.6 : 2.1; B.beat=0.2; beep(196,0.12,"square",0.06); }
         B.modeT-=dt;
-        if(B.modeT<=0 && B.phase>=2){ if(B.phase===3 && Math.random()<0.5){ B.mode="wind"; B.modeT=0.75; beep(880,0.08,"square",0.06); setTimeout(function(){ beep(880,0.08,"square",0.06); },150); }
-          else { B.mode="spiral"; B.modeT=3; B.ang=0; B.spT=0; } }
+        if(B.modeT<=0 && B.phase>=2){ if(B.phase===3 && Math.random()<0.5){ B.mode="wind"; B.modeT=1.0; beep(880,0.08,"square",0.06); setTimeout(function(){ beep(880,0.08,"square",0.06); },150); }
+          else { B.mode="spiral"; B.modeT=2.4; B.ang=0; B.spT=0; } }
       } else if(B.mode==="spiral"){
         B.y+= (homeY - B.y)*Math.min(1,dt*4);
         B.spT-=dt; B.ang+=dt*3.2;
-        if(B.spT<=0){ B.spT=0.09; for(var arm=0;arm<2;arm++){ var aa=B.ang+arm*Math.PI; SP.eb.push({x:B.x,y:B.y,vx:Math.cos(aa)*H*0.28,vy:Math.abs(Math.sin(aa))*H*0.28+H*0.05,note:true}); } }
+        if(B.spT<=0){ B.spT=0.17; for(var arm=0;arm<2;arm++){ var aa=B.ang+arm*Math.PI; SP.eb.push({x:B.x,y:B.y,vx:Math.cos(aa)*H*0.2,vy:Math.abs(Math.sin(aa))*H*0.2+H*0.06,note:true}); } }
         B.modeT-=dt; if(B.modeT<=0){ B.mode="move"; B.modeT=3; }
       } else if(B.mode==="wind"){
         B.modeT-=dt; B.tx=me.x; if(B.modeT<=0){ B.mode="charge"; beep(300,0.3,"sawtooth",0.07); }
       } else if(B.mode==="charge"){
-        B.x+=(B.tx-B.x)*Math.min(1,dt*3); B.y+=H*1.3*dt;
-        if(B.y>=shipY()-110){ B.mode="return"; B.shake=0.4; vibrate(80); for(var c2=0;c2<10;c2++){ var a2=c2/10*Math.PI*2; SP.eb.push({x:B.x,y:B.y,vx:Math.cos(a2)*H*0.25,vy:Math.sin(a2)*H*0.25,note:true}); } }
+        B.x+=(B.tx-B.x)*Math.min(1,dt*2); B.y+=H*0.85*dt;
+        if(B.y>=shipY()-110){ B.mode="return"; B.shake=0.4; vibrate(80); for(var c2=0;c2<10;c2++){ var a2=c2/10*Math.PI*2; SP.eb.push({x:B.x,y:B.y,vx:Math.cos(a2)*H*0.18,vy:Math.sin(a2)*H*0.25,note:true}); } }
       } else if(B.mode==="return"){
         B.y+=(homeY-B.y)*Math.min(1,dt*2.5); if(Math.abs(B.y-homeY)<6){ B.mode="move"; B.modeT=3; }
       }
       if(B.beat>0) B.beat-=dt;
-      if(B.phase>=2){ B.spawnT-=dt; if(B.spawnT<=0){ B.spawnT=5.5; [-1,1].forEach(function(sd){ SP.en.push({kind:"clock", fx:0, fy:0, alive:true, ph:0, hp:1, dive:{t:0,x0:B.x+sd*50,y0:B.y,tx:me.x,shot:false}}); }); } }
+      if(B.phase>=2){ B.spawnT-=dt; if(B.spawnT<=0){ B.spawnT=7.5; [-1,1].forEach(function(sd){ SP.en.push({kind:"clock", fx:0, fy:0, alive:true, ph:0, hp:1, dive:{t:0,x0:B.x+sd*50,y0:B.y,tx:me.x,shot:false}}); }); } }
       if(Math.abs(B.x-me.x)<60 && Math.abs(B.y-sy)<70){ if(SP.inv<=0){ lives--; me.hurt=0.8; SP.inv=1.6; pops.push({x:me.x,y:sy-50,txt:"Travolto!",life:1}); beep(130,0.3,"sawtooth",0.08); vibrate(120);
         if(lives<=0){ gameOver("Travolto dal juke-box: la festa al Vintage è finita!"); return; } } }
     }
@@ -2028,12 +2029,14 @@ a.arcade-btn{text-decoration:none;display:inline-block}
       if(hit || s.y<-20) SP.shots.splice(i,1); }
     if(SP.done){ SP.done-=dt; if(SP.done<=0){ SP.done=0; levelComplete(); return; } }
     // colpi nemici e scontri
-    function hitShip(msg){ if(SP.inv>0) return false; lives--; me.hurt=0.8; SP.inv=1.6; pops.push({x:me.x,y:sy-50,txt:"Colpito!",life:1}); beep(130,0.3,"sawtooth",0.08); vibrate(120);
+    function hitShip(msg){ if(SP.inv>0) return false; lives--; me.hurt=0.8; SP.inv=2.0; SP.clearNear=true; pops.push({x:me.x,y:sy-50,txt:"Colpito!",life:1}); beep(130,0.3,"sawtooth",0.08); vibrate(120);
       for(var k2=0;k2<8;k2++) puffs.push({x:me.x,y:sy,vx:(Math.random()-.5)*W*0.4,vy:(Math.random()-.5)*H*0.2,b:3,life:0.5});
       if(lives<=0){ gameOver(msg); return true; } return false; }
-    for(i=SP.eb.length-1;i>=0;i--){ var b=SP.eb[i]; b.x+=b.vx*dt*fast; b.y+=b.vy*dt*fast;
-      if(Math.abs(b.x-me.x)<18 && Math.abs(b.y-sy)<22){ SP.eb.splice(i,1); if(hitShip("Sgabello colpito: la festa al Vintage finisce qui!")) return; continue; }
+    for(i=SP.eb.length-1;i>=0;i--){ var b=SP.eb[i]; if(!b) continue; b.x+=b.vx*dt*fast; b.y+=b.vy*dt*fast;
+      if(Math.abs(b.x-me.x)<13 && b.y>sy-54 && b.y<sy+28){ SP.eb.splice(i,1); if(hitShip("Sgabello colpito: la festa al Vintage finisce qui!")) return; continue; }
       if(b.y>H+20||b.x<-20||b.x>W+20) SP.eb.splice(i,1); }
+    // dopo un colpo subito spariscono i colpi vicini: un attimo per riprendersi
+    if(SP.clearNear){ SP.clearNear=false; SP.eb=SP.eb.filter(function(q){ return Math.hypot(q.x-me.x,q.y-sy)>W*0.3; }); }
     for(i=0;i<SP.en.length;i++){ var e2=SP.en[i]; if(!e2.alive||!e2.dive) continue; var pe=enPos(e2);
       if(Math.abs(pe.x-me.x)<r+12 && Math.abs(pe.y-sy)<r+14){ e2.alive=false; if(hitShip("Speronato da una sveglia: festa finita!")) return; } }
     // bonus che cadono
@@ -2115,7 +2118,7 @@ a.arcade-btn{text-decoration:none;display:inline-block}
     if(SP.defeat){ var D=SP.defeat; cx.save(); cx.translate(D.x,D.y); cx.rotate(D.rot); cx.translate(-D.x,-D.y); drawJukebox({phase:3,hp:1,max:9,beat:0,shake:D.t<0.9?0.5:0,flash:0,mode:"x"},D.x,D.y); cx.restore();
       D.discs.forEach(function(dc){ cx.save(); cx.translate(dc.x,dc.y); cx.rotate(dc.r); cx.fillStyle="#111827"; cx.beginPath(); cx.arc(0,0,12,0,7); cx.fill(); cx.fillStyle="#f43f5e"; cx.beginPath(); cx.arc(0,0,4,0,7); cx.fill(); cx.restore(); }); }
     SP.shots.forEach(function(s){ cx.fillStyle="#c08a4b"; cx.fillRect(s.x-3,s.y-7,6,10); cx.fillStyle="#e3b77a"; cx.fillRect(s.x-3,s.y-7,6,3); });
-    SP.eb.forEach(function(b){ if(b.note){ drawNote(b.x-4,b.y,4); } else { var u=3; cx.fillStyle="#fde047"; cx.fillRect(b.x-2*u,b.y-3*u,4*u,4*u); cx.fillRect(b.x-3*u,b.y+u,6*u,u); cx.fillStyle="#f97316"; cx.fillRect(b.x-u/2,b.y+2*u,u,u); } });
+    SP.eb.forEach(function(b){ if(b.note){ drawNote(b.x-4,b.y-4,4); } else { var u=3; cx.fillStyle="#fde047"; cx.fillRect(b.x-2*u,b.y-3*u,4*u,4*u); cx.fillRect(b.x-3*u,b.y+u,6*u,u); cx.fillStyle="#f97316"; cx.fillRect(b.x-u/2,b.y+2*u,u,u); } });
     SP.pups.forEach(function(pu){ if(pu.k==="heart"){ cx.fillStyle="#ff6fa5"; cx.fillRect(pu.x-8,pu.y-4,7,7); cx.fillRect(pu.x+1,pu.y-4,7,7); cx.fillRect(pu.x-6,pu.y+2,12,6); } else drawItem({k:pu.k,x:pu.x,y:pu.y,r:14,rot:0}); });
     if(!(SP.inv>0 && Math.floor(t*12)%2)) drawStoolJet(me.x, sy);
     if(SP.dbl>0){ cx.font="7px 'Press Start 2P', monospace"; cx.textAlign="center"; cx.textBaseline="top"; cx.fillStyle="#fde047"; cx.fillText("COLPO DOPPIO "+Math.ceil(SP.dbl),me.x,sy+44); }
