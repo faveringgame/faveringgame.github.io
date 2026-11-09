@@ -72,6 +72,11 @@ h2.red{color:#f43f5e}
 .lvsel .lbl{width:100%;font-size:.55rem;color:#94a3b8;margin-bottom:4px}
 .lvsel button{font-family:"Press Start 2P","Courier New",monospace;font-size:.62rem;padding:9px 10px;border-radius:8px;background:#1e293b;color:#fbbf24;border:2px solid rgba(245,158,11,.4);cursor:pointer}
 .lvsel button:disabled{opacity:.35;cursor:default}
+.dl{margin-top:16px;font-size:.62rem;padding:11px 14px;border-radius:10px;background:#0f172a;color:#4ade80;border:2px solid rgba(74,222,128,.55);cursor:pointer}
+.dl:focus-visible{outline:3px solid #38bdf8;outline-offset:2px}
+.howto{max-width:22rem;text-align:left;background:rgba(30,41,59,.9);border:2px solid #f59e0b;border-radius:12px;padding:6px 14px;margin:0 0 18px}
+.howto p{font-size:1rem;margin:8px 0;color:#e2e8f0}
+a.arcade-btn{text-decoration:none;display:inline-block}
 .lvsel button:focus-visible{outline:3px solid #38bdf8;outline-offset:2px}
 #dpad{position:absolute;left:12px;bottom:calc(12px + env(safe-area-inset-bottom,0px));width:132px;height:132px;display:none;pointer-events:none}
 #dpad button{position:absolute;width:44px;height:44px;border-radius:12px;border:2px solid rgba(255,255,255,.35);background:rgba(15,23,42,.32);color:rgba(255,255,255,.8);font-size:1rem;pointer-events:auto;touch-action:none;cursor:pointer;padding:0}
@@ -117,6 +122,18 @@ h2.red{color:#f43f5e}
     <div class="legend"><span>🍺 birra +1</span><span>🥃 amaro +2</span><span>🏆 boccale d’oro +5</span><span>💧 acqua, ti riprendi</span></div>
     <button class="arcade-btn" id="play">GIOCA ORA</button>
     <div class="lvsel px" id="lvsel"><div class="lbl">OPPURE PARTI DAL LIVELLO</div></div>
+    <button class="dl px" id="install">📲 SCARICA L’APP</button>
+  </div>
+
+  <div class="screen hidden" id="installInfo">
+    <h2 class="px">SCARICA L’APP</h2>
+    <p id="instTxt">Apri il gioco dal telefono e aggiungilo alla schermata Home: avrai l’icona di Favering e funzionerà anche senza internet.</p>
+    <div class="howto">
+      <p><b>Android (Chrome):</b> menu ⋮ in alto a destra → <b>Installa app</b> (o “Aggiungi a schermata Home”).</p>
+      <p><b>iPhone (Safari):</b> tasto Condividi → <b>Aggiungi alla schermata Home</b>.</p>
+    </div>
+    <a class="arcade-btn" id="openSite" href="https://ruccyo13.github.io/" target="_blank" rel="noopener">APRI IL SITO DEL GIOCO</a>
+    <button class="dl px" id="instBack" style="margin-top:18px">INDIETRO</button>
   </div>
 
   <div class="screen hidden" id="paused">
@@ -307,13 +324,13 @@ h2.red{color:#f43f5e}
   function pause(){ if(state!=="play") return; state="pause"; show("paused"); stopMusic(); }
   function resume(){ if(state!=="pause") return; state="play"; show(null); MUS.timer=null; var nm=MUS.name; MUS.name=null; playMusic(nm||levelTrack()); last=performance.now(); requestAnimationFrame(loop); }
   function show(id){
-    ["start","paused","over"].forEach(function(s){ document.getElementById(s).classList.toggle("hidden", s!==id); });
+    ["start","paused","over","installInfo"].forEach(function(s){ document.getElementById(s).classList.toggle("hidden", s!==id); });
     var b = id && document.querySelector("#"+id+" .arcade-btn"); if(b) b.focus({preventScroll:true});
     if(id) requestAnimationFrame(idle);
   }
   function showBanner(){
     document.getElementById("b1").textContent = "LIVELLO "+level;
-    document.getElementById("b2").textContent = isTaxi() ? "RITORNO A CASA IN TAXI" : isSpace() ? "IL RETRÒ VOLANTE!" : isPinball() ? "FLIPPER AL BAR LE MORE!" : isSling() ? "LA FIONDA: ZITTISCI LE SVEGLIE!" : isPlatform() ? "CORRI FINO AL BAR ROSSI!" : isBagno() ? "SCAPPA IN BAGNO! EVITA LE BARISTE" : (isBarista() ? "STASERA FAI TU IL BARISTA!" : (isShooter() ? "SPARA I TAPPI ALLE SVEGLIE!" : (level===1 ? "SI PARTE!" : "CAMBIO BAR!")));
+    document.getElementById("b2").textContent = isTaxi() ? "RITORNO A CASA IN TAXI" : isSpace() ? "IL RETRÒ VOLANTE!" : isStack() ? "IMPILA LE CASSE DEL FURGONE!" : isWhack() ? "SONO LE 5: ZITTISCI LE SVEGLIE!" : isPlatform() ? "CORRI FINO AL BAR ROSSI!" : isBagno() ? "SCAPPA IN BAGNO! EVITA LE BARISTE" : (isBarista() ? "STASERA FAI TU IL BARISTA!" : (isShooter() ? "SPARA I TAPPI ALLE SVEGLIE!" : (level===1 ? "SI PARTE!" : "CAMBIO BAR!")));
     document.getElementById("banner").classList.remove("hidden"); bannerT=2.2;
   }
   var hudCache={};
@@ -1519,9 +1536,9 @@ h2.red{color:#f43f5e}
     2:["CORSA AL BAR ROSSI", "◀ ▶ per correre, SALTA per saltare: premi di nuovo in aria per il DOPPIO SALTO.", "Dopo 5 birre compare LANCIA: tira i tappi.", "Convinci la barista arrabbiata ed entra nel bar."],
     3:["DI CORSA IN BAGNO", "Usa le frecce per arrivare alla porta del WC.", "Evita bariste, chi offre da bere e le ragazze.", "Arriva prima che finisca la barra SCAPPA!"],
     4:["IL RETRÒ VOLANTE", "Sei su uno sgabello a reazione: trascina il dito, spara tappi da solo.", "3 ondate di sveglie e telefoni nel locale, poi il Juke-box impazzito.", "Le birre danno il colpo doppio, l’acqua ti raddrizza."],
-    5:["FLIPPER", "Tocca a sinistra o a destra dello schermo per i flipper.", "Colpisci i boccali, abbatti le 4 sveglie e prendi la birra.", "Obiettivo: 30 punti. Se la pallina cade perdi una vita."],
-    6:["LA FIONDA", "Trascina indietro dalla fionda e rilascia per tirare.", "Fai crollare casse, assi e bottiglie sulle sveglie.", "3 fasi: zittisci tutte le sveglie prima di finire i tiri."],
-    7:["RITORNO A CASA", "Trascina il dito per guidare il taxi.", "Accosta per caricare gli amici e lasciarli a CASA.", "Evita le macchine fino al cartello SOVERE."]
+    5:["IMPILA LE CASSE", "La gru fa dondolare la cassa: tocca per mollarla.", "Se sporge troppo cade. Centrata è PERFETTA (+3).", "Obiettivo: impila 10 casse fino al traguardo."],
+    6:["LE 5 DEL MATTINO", "Dormivi, ma suonano le sveglie: toccale prima che squillino.", "Tocca anche i telefoni del capo. I caffè ti svegliano.", "La barista NON va toccata. Obiettivo: 20 punti."],
+    7:["RITORNO A CASA", "Trascina il dito per guidare il taxi.", "Accosta quando gli amici gridano FAVEROOOOO e lasciali a CASA.", "Evita le macchine fino al cartello SOVERE."]
   };
   function levelName(n){ return n===TAXI_LEVEL ? "RITORNO A CASA IN TAXI" : BARS[n-1].n.toUpperCase().replace("É","E").replace("Ò","O"); }
   function levelComplete(){
@@ -1639,7 +1656,7 @@ h2.red{color:#f43f5e}
 
   /* ===== LIVELLO 5: IMPILA LE CASSE (BAR LE MORE) ===== */
   var ST = null, STACK_GOAL = 10;
-  function isStack(){ return false; } // sostituito dal flipper
+  function isStack(){ return level===5; }
   function startStack(){
     var cw=Math.max(64,Math.min(W*0.3,120)), ch=Math.round(cw*0.55);
     ST={cw:cw, ch:ch, base:groundY-H*0.075, stack:[{x:W/2, w:cw*1.15, keg:false, wob:0}], ph:0, cur:null, fall:null, cam:0, placed:0, fallers:[], beerT:0};
@@ -1745,7 +1762,7 @@ h2.red{color:#f43f5e}
 
   /* ===== LIVELLO 6: LE 5 DEL MATTINO (NO LIMITS CAFÉ) ===== */
   var WK = null;
-  function isWhack(){ return false; } // sostituito dalla fionda
+  function isWhack(){ return level===6; }
   function wkSlots(){ var s=[], rows=[0.3,0.44,0.58], cols=[0.2,0.5,0.8]; rows.forEach(function(r){ cols.forEach(function(c){ s.push({x:W*c, y:H*r}); }); }); return s; }
   function startWhack(){ WK={items:[], spawnT:2.4, n:0}; me.x=W/2; me.target=null; }
   function wkSway(){ return {x:Math.sin(t*1.9)*drunk*W*0.06, y:Math.cos(t*1.3)*drunk*10}; }
@@ -2132,7 +2149,7 @@ h2.red{color:#f43f5e}
 
   /* ===== LIVELLO 5: FLIPPER AL BAR LE MORE ===== */
   var PB = null, PB_GOAL = 30;
-  function isPinball(){ return level===5; }
+  function isPinball(){ return false; } // flipper tenuto da parte
   function pbGeom(){
     var L=14, R=W-14, top=Math.max(H*0.22,170), ry=Math.min(80,W*0.22), yLow=H*0.66, fy=H-150, i;
     var segs=[], prev=null, n=16;
@@ -2253,7 +2270,7 @@ h2.red{color:#f43f5e}
 
   /* ===== LIVELLO 6: LA FIONDA (NO LIMITS CAFÉ) ===== */
   var SL = null;
-  function isSling(){ return level===6; }
+  function isSling(){ return false; } // fionda tenuta da parte
   function slG(){ return H-130; }
   function slBase(){ return {x:W*0.25, y:slG()-78}; }
   function startSling(){ SL={stage:0, aiming:false, pull:{x:0,y:0}, proj:null, shots:[], bodies:[], clocks:[], settle:0, msg:0, hint:5, fail:0}; me.target=null; slSetup(1); }
@@ -2640,7 +2657,7 @@ h2.red{color:#f43f5e}
     var ax = side<0 ? x+3*u : x-4*u; cx.fillStyle=col; cx.fillRect(ax,y-13*u+Math.round(Math.sin(t*8))*u,u,6*u);
     cx.fillStyle="#b45309"; cx.fillRect(side<0 ? x-5*u : x+3*u, y-6*u, 2*u, 4*u);
     cx.font=Math.max(8,u*3)+"px 'Press Start 2P', monospace"; cx.textAlign="center"; cx.textBaseline="bottom";
-    cx.fillStyle="#0f172a"; cx.fillRect(x-7*u,y-19*u,14*u,5*u); cx.fillStyle="#facc15"; cx.fillText("TAXI!",x,y-14.6*u);
+    var ft="FAVEROOOOO", ftw=cx.measureText(ft).width+2*u; cx.fillStyle="#0f172a"; cx.fillRect(x-ftw/2,y-19*u,ftw,5*u); cx.fillStyle="#f472b6"; cx.fillText(ft,x,y-14.6*u);
   }
   function drawHouse(x,y){
     var u=Math.max(3,Math.round(W/100));
@@ -2723,6 +2740,17 @@ h2.red{color:#f43f5e}
       if(n>=5){ n=0; testMode=!testMode; try{ localStorage.setItem("favering-prova", testMode?"1":"0"); }catch(e){} refreshLvsel();
         (testMode?[523,659,784,1047]:[784,659,523]).forEach(function(f,j){ setTimeout(function(){ beep(f,0.08,"square",0.06); }, j*70); }); }
     });
+  })();
+  // installazione dell'app
+  var installEvt=null;
+  window.addEventListener("beforeinstallprompt",function(e){ e.preventDefault(); installEvt=e; });
+  (function(){ var b=document.getElementById("install");
+    var standalone = (window.matchMedia && window.matchMedia("(display-mode: standalone)").matches) || window.navigator.standalone;
+    if(standalone) b.style.display="none";
+    if(location.hostname==="ruccyo13.github.io") document.getElementById("openSite").style.display="none";
+    b.onclick=function(){ if(installEvt){ installEvt.prompt(); installEvt.userChoice.then(function(){ installEvt=null; }); return; } show("installInfo"); };
+    document.getElementById("instBack").onclick=function(){ show("start"); };
+    window.addEventListener("appinstalled",function(){ b.style.display="none"; });
   })();
   document.getElementById("again").onclick=function(){ start(1); };
   document.getElementById("resume").onclick=resume;
